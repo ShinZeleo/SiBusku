@@ -79,6 +79,14 @@
                                     <p class="text-sm text-gray-500">Status Pembayaran</p>
                                     <p class="font-medium">{{ $booking->payment_status === 'paid' ? 'Lunas' : ($booking->payment_status === 'pending' ? 'Menunggu Pembayaran' : 'Gagal') }}</p>
                                 </div>
+                                @php($waBadge = booking_whatsapp_badge($booking))
+                                <div>
+                                    <p class="text-sm text-gray-500">Status WhatsApp</p>
+                                    <span class="mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {{ $waBadge['classes'] }}">
+                                        <span class="h-2 w-2 rounded-full {{ $waBadge['dot'] }}"></span>
+                                        {{ $waBadge['label'] }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
