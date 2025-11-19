@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    public static function send(string $phone, string $message): bool
+    public static function send(string $phone, string $message, ?Booking $booking = null): bool
     {
         $url         = Config::get('services.fonnte.url');
         $token       = Config::get('services.fonnte.token');
@@ -36,6 +36,7 @@ class WhatsAppService
                 $status = $response->successful() ? 'sent' : 'failed';
 
                 WhatsAppLog::create([
+                    'booking_id' => $booking?->id,
                     'phone' => $phone,
                     'message' => $message,
                     'status' => $status,
@@ -67,6 +68,7 @@ class WhatsAppService
             // Coba buat log ke database
             try {
                 WhatsAppLog::create([
+                    'booking_id' => $booking?->id,
                     'phone' => $phone,
                     'message' => $message,
                     'status' => 'failed',
@@ -94,7 +96,7 @@ class WhatsAppService
             "Total: Rp " . number_format($booking->total_price, 0, ',', '.') . "\n\n" .
             "Status: {$booking->status}";
 
-        self::send($booking->customer_phone, $userMessage);
+        self::send($booking->customer_phone, $userMessage, $booking);
 
         $adminPhone = Config::get('services.fonnte.admin_phone');
 
@@ -108,7 +110,7 @@ class WhatsAppService
                 "Kursi: {$booking->seats_count}\n" .
                 "Total: Rp " . number_format($booking->total_price, 0, ',', '.');
 
-            self::send($adminPhone, $adminMessage);
+            self::send($adminPhone, $adminMessage, $booking);
         }
     }
 
@@ -126,6 +128,6 @@ class WhatsAppService
             "Kursi: {$booking->seats_count}\n" .
             "Status: {$booking->status}";
 
-        self::send($booking->customer_phone, $message);
+        self::send($booking->customer_phone, $message, $booking);
     }
 }
