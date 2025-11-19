@@ -18,7 +18,7 @@ class UserBookingController extends Controller
      */
     public function index()
     {
-        $bookings = Booking::with(['trip.route', 'trip.bus'])
+        $bookings = Booking::with(['trip.route', 'trip.bus', 'latestWhatsappLog'])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -31,7 +31,7 @@ class UserBookingController extends Controller
      */
     public function show($id)
     {
-        $booking = Booking::with(['trip.route', 'trip.bus'])->findOrFail($id);
+        $booking = Booking::with(['trip.route', 'trip.bus', 'latestWhatsappLog'])->findOrFail($id);
 
         // Hanya pemilik booking yang bisa melihat
         if ($booking->user_id !== Auth::id()) {

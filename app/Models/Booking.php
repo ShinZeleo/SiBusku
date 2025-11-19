@@ -36,10 +36,16 @@ class Booking extends Model
         return $this->belongsTo(Trip::class);
     }
 
-    // Relasi: Booking memiliki satu WhatsAppLog (opsional)
-    public function whatsappLog()
+    // Relasi: Booking memiliki banyak WhatsAppLog
+    public function whatsappLogs()
     {
-        return $this->hasOne(WhatsAppLog::class);
+        return $this->hasMany(WhatsAppLog::class);
+    }
+
+    // Relasi: Log WhatsApp terbaru
+    public function latestWhatsappLog()
+    {
+        return $this->hasOne(WhatsAppLog::class)->latestOfMany();
     }
 
     // Accessor: Format harga total

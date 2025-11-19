@@ -107,7 +107,46 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- Log WhatsApp -->
+                    <div class="mt-8">
+                        <h2 class="text-lg font-semibold mb-4">Log WhatsApp Terbaru</h2>
+                        @php
+                            $waLog = $booking->latestWhatsappLog;
+                            $map = [
+                                'sent' => ['label' => 'Sukses', 'class' => 'bg-emerald-100 text-emerald-800'],
+                                'pending' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
+                                'failed' => ['label' => 'Gagal', 'class' => 'bg-red-100 text-red-800'],
+                            ];
+                        @endphp
+
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            @if($waLog)
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-500 mb-1">Status Notifikasi</p>
+                                        @php
+                                            $info = $map[$waLog->status] ?? ['label' => strtoupper($waLog->status), 'class' => 'bg-gray-100 text-gray-800'];
+                                        @endphp
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $info['class'] }}">
+                                            {{ $info['label'] }}
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-gray-500">{{ $waLog->sent_at ? 'Dikirim pada' : 'Dibuat pada' }}</p>
+                                        <p class="text-sm font-medium text-gray-700">{{ ($waLog->sent_at ?? $waLog->created_at)->format('d M Y H:i') }}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <p class="text-sm text-gray-500 mb-1">Pesan</p>
+                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ $waLog->message }}</p>
+                                </div>
+                            @else
+                                <p class="text-sm text-gray-500">Belum ada log WhatsApp untuk booking ini.</p>
+                            @endif
+                        </div>
+                    </div>
+
                     <div class="mt-8 flex justify-end">
                         <a href="{{ route('user.bookings.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Kembali ke Riwayat</a>
                     </div>

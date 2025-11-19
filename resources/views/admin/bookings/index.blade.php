@@ -36,14 +36,15 @@
                             <table class="min-w-full divide-y divide-slate-200 text-sm">
                                 <thead class="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left">ID Booking</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Pemesan</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Rute</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Tanggal</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Jumlah Kursi</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Total Harga</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Status</th>
-                                        <th scope="col" class="px-6 py-3 text-left">Aksi</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Booking</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pemesan</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rute</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Kursi</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Harga</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notif WA</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-slate-100 text-slate-600">
@@ -63,6 +64,32 @@
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-{{ $booking->status === 'confirmed' ? 'green' : ($booking->status === 'pending' ? 'yellow' : 'red') }}-100 text-{{ $booking->status === 'confirmed' ? 'green' : ($booking->status === 'pending' ? 'yellow' : 'red') }}-800">
                                                     {{ $booking->status_in_indonesian }}
                                                 </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                @php
+                                                    $waLog = $booking->latestWhatsappLog;
+                                                    $waStatusClass = 'bg-gray-100 text-gray-800';
+                                                    $waStatusLabel = 'Belum ada log';
+
+                                                    if ($waLog) {
+                                                        $map = [
+                                                            'sent' => ['label' => 'Sukses', 'class' => 'bg-emerald-100 text-emerald-800'],
+                                                            'pending' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
+                                                            'failed' => ['label' => 'Gagal', 'class' => 'bg-red-100 text-red-800'],
+                                                        ];
+
+                                                        $waStatusLabel = $map[$waLog->status]['label'] ?? strtoupper($waLog->status);
+                                                        $waStatusClass = $map[$waLog->status]['class'] ?? 'bg-gray-100 text-gray-800';
+                                                    }
+                                                @endphp
+                                                <div>
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $waStatusClass }}">
+                                                        {{ $waStatusLabel }}
+                                                    </span>
+                                                    @if($waLog)
+                                                        <p class="text-xs text-gray-500 mt-1">{{ $waLog->sent_at ? $waLog->sent_at->format('d M Y H:i') : 'Belum dikirim' }}</p>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <a href="{{ route('admin.bookings.edit', $booking->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3 font-semibold">Edit</a>

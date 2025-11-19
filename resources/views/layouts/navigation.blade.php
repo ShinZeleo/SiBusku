@@ -31,6 +31,9 @@
                             <x-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
                                 {{ __('Booking') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.whatsapp-logs.index')" :active="request()->routeIs('admin.whatsapp-logs.*')">
+                                {{ __('Log WA') }}
+                            </x-nav-link>
                         @else
                             <x-nav-link :href="route('user.bookings.index')" :active="request()->routeIs('user.bookings.*')">
                                 {{ __('Riwayat Booking') }}
@@ -113,6 +116,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
                         {{ __('Booking') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.whatsapp-logs.index')" :active="request()->routeIs('admin.whatsapp-logs.*')">
+                        {{ __('Log WA') }}
                     </x-responsive-nav-link>
                 @else
                     <x-responsive-nav-link :href="route('user.bookings.index')" :active="request()->routeIs('user.bookings.*')">
