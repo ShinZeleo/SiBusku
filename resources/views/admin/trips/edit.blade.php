@@ -7,76 +7,79 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm">
                 <div class="p-6 text-gray-900">
-                    <h1 class="text-2xl font-bold mb-6">Edit Trip</h1>
-                    
-                    <form action="{{ route('admin.trips.update', $trip->id) }}" method="POST">
+                    <div class="mb-6 border-b border-slate-100 pb-4">
+                        <h1 class="text-2xl font-bold text-slate-900">Edit Trip</h1>
+                        <p class="text-sm text-slate-500">Perbarui jadwal dan detail perjalanan yang sudah ada.</p>
+                    </div>
+
+                    <form action="{{ route('admin.trips.update', $trip->id) }}" method="POST" class="space-y-6">
                         @csrf
                         @method('PUT')
-                        <div class="space-y-6">
+                        <div>
+                            <label for="route_id" class="block text-sm font-semibold text-slate-700">Rute</label>
+                            <select name="route_id" id="route_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('route_id') border-rose-400 @enderror" required>
+                                <option value="">Pilih Rute</option>
+                                @foreach($routes as $route)
+                                    <option value="{{ $route->id }}" @selected(old('route_id', $trip->route_id) == $route->id)>{{ $route->origin_city }} - {{ $route->destination_city }}</option>
+                                @endforeach
+                            </select>
+                            @error('route_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="bus_id" class="block text-sm font-semibold text-slate-700">Bus</label>
+                            <select name="bus_id" id="bus_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('bus_id') border-rose-400 @enderror" required>
+                                <option value="">Pilih Bus</option>
+                                @foreach($buses as $bus)
+                                    <option value="{{ $bus->id }}" @selected(old('bus_id', $trip->bus_id) == $bus->id)>{{ $bus->name }} ({{ $bus->plate_number }})</option>
+                                @endforeach
+                            </select>
+                            @error('bus_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="departure_date" class="block text-sm font-semibold text-slate-700">Tanggal Berangkat</label>
+                            <input type="date" name="departure_date" id="departure_date" value="{{ old('departure_date', $trip->departure_date) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('departure_date') border-rose-400 @enderror" required>
+                            @error('departure_date')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="departure_time" class="block text-sm font-semibold text-slate-700">Jam Berangkat</label>
+                            <input type="time" name="departure_time" id="departure_time" value="{{ old('departure_time', $trip->departure_time) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('departure_time') border-rose-400 @enderror" required>
+                            @error('departure_time')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
-                                <label for="route_id" class="block text-sm font-medium text-gray-700">Rute</label>
-                                <select name="route_id" id="route_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('route_id') border-red-500 @enderror" required>
-                                    <option value="">Pilih Rute</option>
-                                    @foreach($routes as $route)
-                                        <option value="{{ $route->id }}" {{ $trip->route_id == $route->id ? 'selected' : '' }}>{{ $route->origin_city }} - {{ $route->destination_city }}</option>
-                                    @endforeach
-                                </select>
-                                @error('route_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="bus_id" class="block text-sm font-medium text-gray-700">Bus</label>
-                                <select name="bus_id" id="bus_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('bus_id') border-red-500 @enderror" required>
-                                    <option value="">Pilih Bus</option>
-                                    @foreach($buses as $bus)
-                                        <option value="{{ $bus->id }}" {{ $trip->bus_id == $bus->id ? 'selected' : '' }}>{{ $bus->name }} ({{ $bus->plate_number }})</option>
-                                    @endforeach
-                                </select>
-                                @error('bus_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="departure_date" class="block text-sm font-medium text-gray-700">Tanggal Berangkat</label>
-                                <input type="date" name="departure_date" id="departure_date" value="{{ old('departure_date', $trip->departure_date) }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('departure_date') border-red-500 @enderror" required min="{{ date('Y-m-d') }}">
-                                @error('departure_date')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="departure_time" class="block text-sm font-medium text-gray-700">Jam Berangkat</label>
-                                <input type="time" name="departure_time" id="departure_time" value="{{ old('departure_time', $trip->departure_time) }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('departure_time') border-red-500 @enderror" required>
-                                @error('departure_time')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="price" class="block text-sm font-medium text-gray-700">Harga per Kursi</label>
-                                <input type="number" step="1000" name="price" id="price" value="{{ old('price', $trip->price) }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('price') border-red-500 @enderror" required min="0">
+                                <label for="price" class="block text-sm font-semibold text-slate-700">Harga per Kursi</label>
+                                <input type="number" step="1000" name="price" id="price" value="{{ old('price', $trip->price) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('price') border-rose-400 @enderror" required min="0">
                                 @error('price')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
-                            
+
                             <div>
-                                <label for="total_seats" class="block text-sm font-medium text-gray-700">Jumlah Kursi</label>
-                                <input type="number" name="total_seats" id="total_seats" value="{{ old('total_seats', $trip->total_seats) }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('total_seats') border-red-500 @enderror" required min="1">
+                                <label for="total_seats" class="block text-sm font-semibold text-slate-700">Jumlah Kursi</label>
+                                <input type="number" name="total_seats" id="total_seats" value="{{ old('total_seats', $trip->total_seats) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('total_seats') border-rose-400 @enderror" required min="1">
                                 @error('total_seats')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
-                            
-                            <div class="flex items-center justify-end">
-                                <a href="{{ route('admin.trips.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">Batal</a>
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Update</button>
-                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3">
+                            <a href="{{ route('admin.trips.index') }}" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Batal</a>
+                            <button type="submit" class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Update</button>
                         </div>
                     </form>
                 </div>
