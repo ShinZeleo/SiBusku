@@ -8,6 +8,7 @@ use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\UserBookingController;
+use App\Http\Controllers\WhatsAppLogController;
 use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Route;
 
@@ -85,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('bookings', BookingController::class);
         Route::get('bookings/export/csv', [BookingController::class, 'exportCsv'])->name('bookings.export.csv');
         Route::get('trips/export/csv', [TripController::class, 'exportCsv'])->name('trips.export.csv');
+        Route::get('whatsapp-logs', [WhatsAppLogController::class, 'index'])->name('whatsapp-logs.index');
     });
 
     // Rute untuk membuat booking (hanya untuk user biasa) - perlu force phone
