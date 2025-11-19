@@ -13,7 +13,10 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $routes = Route::where('is_active', true)->get();
+        $activeRoutes = Route::where('is_active', true)->get();
+        $originCities = $activeRoutes->pluck('origin_city')->unique()->sort()->values();
+        $destinationCities = $activeRoutes->pluck('destination_city')->unique()->sort()->values();
+
         $trips = Trip::with(['route', 'bus'])
             ->where('status', 'scheduled')
             ->whereDate('departure_date', '>=', now())
@@ -21,7 +24,11 @@ class HomeController extends Controller
             ->limit(5)
             ->get();
 
-        return view('home', compact('routes', 'trips'));
+        return view('home', [
+            'originCities' => $originCities,
+            'destinationCities' => $destinationCities,
+            'trips' => $trips,
+        ]);
     }
 
     /**
@@ -29,31 +36,27 @@ class HomeController extends Controller
      */
     public function search(Request $request)
     {
-        $request->validate([
-            'origin' => 'required|exists:routes,id',
-            'destination' => 'required|exists:routes,id',
+        $data = $request->validate([
+            'origin_city' => 'required|string',
+            'destination_city' => 'required|string|different:origin_city',
             'departure_date' => 'required|date|after_or_equal:today',
         ]);
 
+        $matchingRouteIds = Route::where('origin_city', $data['origin_city'])
+            ->where('destination_city', $data['destination_city'])
+            ->pluck('id');
+
         $trips = Trip::with(['route', 'bus'])
-            ->where('route_id', $request->origin)
-            ->whereDate('departure_date', $request->departure_date)
+            ->whereIn('route_id', $matchingRouteIds)
+            ->whereDate('departure_date', $data['departure_date'])
             ->where('status', 'scheduled')
             ->where('available_seats', '>', 0)
             ->orderBy('departure_time')
             ->get();
 
-        // Filter berdasarkan tujuan jika diperlukan
-        if ($request->destination) {
-            $trips = $trips->filter(function ($trip) use ($request) {
-                return $trip->route->destination_city == Route::findOrFail($request->destination)->origin_city ||
-                       $trip->route->destination_city == Route::findOrFail($request->destination)->destination_city;
-            })->values();
-        }
-
-        $originCity = Route::findOrFail($request->origin)->origin_city;
-        $destinationCity = Route::findOrFail($request->destination)->destination_city;
-        $departureDate = $request->departure_date;
+        $originCity = $data['origin_city'];
+        $destinationCity = $data['destination_city'];
+        $departureDate = $data['departure_date'];
 
         return view('trips.search-results', compact('trips', 'originCity', 'destinationCity', 'departureDate'));
     }
@@ -63,7 +66,11 @@ class HomeController extends Controller
      */
     public function showSearchForm()
     {
-        $routes = Route::where('is_active', true)->get();
-        return view('trips.search', compact('routes'));
+        $activeRoutes = Route::where('is_active', true)->get();
+
+        return view('trips.search', [
+            'originCities' => $activeRoutes->pluck('origin_city')->unique()->sort()->values(),
+            'destinationCities' => $activeRoutes->pluck('destination_city')->unique()->sort()->values(),
+        ]);
     }
 }
