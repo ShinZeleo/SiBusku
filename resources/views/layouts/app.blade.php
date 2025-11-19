@@ -14,8 +14,8 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+    <body class="font-sans antialiased bg-slate-50">
+        <div class="min-h-screen">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -28,9 +28,45 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
-                {{ $slot }}
+            <main class="py-8">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    @php($successMessage = session('success'))
+
+                    @if ($successMessage)
+                        <div
+                            x-data="{ show: true }"
+                            x-show="show"
+                            x-transition.opacity.duration.300ms
+                            x-init="setTimeout(() => show = false, 6000)"
+                            class="mb-6 rounded-2xl border border-green-200 bg-white shadow"
+                        >
+                            <div class="flex items-start gap-4 px-6 py-5">
+                                <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold text-slate-900">Berhasil</p>
+                                    <p class="text-sm text-slate-600">{{ $successMessage }}</p>
+                                </div>
+                                <button type="button" class="text-slate-400 transition hover:text-slate-600" @click="show = false">
+                                    <span class="sr-only">Tutup notifikasi</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 8.586l4.95-4.95 1.414 1.414L11.414 10l4.95 4.95-1.414 1.414L10 11.414l-4.95 4.95-1.414-1.414L8.586 10 3.636 5.05l1.414-1.414L10 8.586z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{ $slot }}
+                </div>
             </main>
         </div>
+
+        @if (! empty($successMessage) && str_contains(strtolower($successMessage), 'whatsapp'))
+            <x-wa-toast :message="$successMessage" />
+        @endif
     </body>
 </html>

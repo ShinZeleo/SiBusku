@@ -1,45 +1,37 @@
 @props(['trip'])
 
-@php
-    $departureDate = \Carbon\Carbon::parse($trip->departure_date)->format('d M Y');
-@endphp
-
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-    <div class="flex-1 space-y-3">
+<div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-            <p class="text-xs font-semibold tracking-widest text-slate-500 uppercase">Rute</p>
-            <h3 class="text-xl font-semibold text-slate-900">{{ $trip->route->origin_city }} &mdash; {{ $trip->route->destination_city }}</h3>
+            <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">Rute Perjalanan</p>
+            <p class="text-2xl font-bold text-gray-900">
+                {{ $trip->route->origin_city }}
+                <span class="text-indigo-500">&rarr;</span>
+                {{ $trip->route->destination_city }}
+            </p>
+            <p class="text-sm text-gray-500">Durasi estimasi {{ $trip->route->duration_estimate }} jam</p>
         </div>
-        <div class="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-            <div>
-                <p class="font-medium text-slate-800">Bus</p>
-                <p>{{ $trip->bus->name }} · {{ $trip->bus->bus_class }}</p>
-            </div>
-            <div>
-                <p class="font-medium text-slate-800">Tanggal</p>
-                <p>{{ $departureDate }} · {{ $trip->departure_time }}</p>
-            </div>
-            <div>
-                <p class="font-medium text-slate-800">Durasi</p>
-                <p>{{ $trip->route->duration_estimate }} jam</p>
-            </div>
-            <div>
-                <p class="font-medium text-slate-800">Kursi Tersedia</p>
-                <p>{{ $trip->available_seats }} kursi</p>
-            </div>
+        <div class="text-left md:text-right">
+            <p class="text-sm text-gray-500">Mulai dari</p>
+            <p class="text-3xl font-bold text-indigo-600">{{ $trip->price_formatted }}</p>
+            <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                {{ $trip->available_seats }} kursi tersedia
+            </span>
         </div>
     </div>
-    <div class="w-full md:w-auto md:text-right space-y-4">
-        <div>
-            <p class="text-xs uppercase tracking-widest text-slate-500">Mulai dari</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $trip->price_formatted }}</p>
+
+    <div class="grid gap-4 sm:grid-cols-3 text-sm text-gray-700">
+        <div class="rounded-xl bg-gray-50 p-3">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Tanggal</p>
+            <p class="font-semibold text-gray-900">{{ $trip->departure_date_formatted }}</p>
         </div>
-        <div>
-            @auth
-                <button onclick="openBookingModal({{ $trip->id }})" class="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">Pesan</button>
-            @else
-                <a href="{{ route('login') }}" class="inline-flex items-center justify-center w-full md:w-auto px-6 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition">Login untuk Pesan</a>
-            @endauth
+        <div class="rounded-xl bg-gray-50 p-3">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Waktu</p>
+            <p class="font-semibold text-gray-900">{{ $trip->departure_time }}</p>
+        </div>
+        <div class="rounded-xl bg-gray-50 p-3">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Bus</p>
+            <p class="font-semibold text-gray-900">{{ $trip->bus->name }} &middot; {{ $trip->bus->bus_class }}</p>
         </div>
     </div>
 </div>
