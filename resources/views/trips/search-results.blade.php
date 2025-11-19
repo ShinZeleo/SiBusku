@@ -97,14 +97,13 @@
                         <input type="text" name="customer_phone" id="customer_phone" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
                     </div>
                     
-                    <div class="mb-4">
-                        <label for="seats_count" class="block text-sm font-medium text-gray-700">Jumlah Kursi</label>
-                        <input type="number" name="seats_count" id="seats_count" min="1" max="10" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Pilih Kursi</label>
+                        <x-seat-selector seat-limit="4" form-id="bookingForm" modal-id="bookingModal" />
                     </div>
-                    
+
                     <div class="flex justify-end space-x-3">
                         <button type="button" onclick="closeBookingModal()" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Pesan Sekarang</button>
                     </div>
                 </form>
             </div>
