@@ -48,6 +48,12 @@ class Booking extends Model
         return $this->hasOne(WhatsAppLog::class)->latestOfMany();
     }
 
+    // Relasi: Booking memiliki banyak WhatsAppLog untuk historis
+    public function whatsappLogs()
+    {
+        return $this->hasMany(WhatsAppLog::class);
+    }
+
     // Accessor: Format harga total
     public function getTotalPriceFormattedAttribute()
     {
