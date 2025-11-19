@@ -74,16 +74,25 @@ class DashboardController extends Controller
      */
     private function userDashboard()
     {
-        $userBookings = Booking::where('user_id', Auth::id())
+        $userId = Auth::id();
+
+        $userBookings = Booking::where('user_id', $userId)
+            ->with(['trip.route', 'trip.bus'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        $totalBookings = Booking::where('user_id', Auth::id())->count();
+        $totalBookings = Booking::where('user_id', $userId)->count();
+        $activeBookingsCount = Booking::where('user_id', $userId)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->count();
+        $completedBookingsCount = Booking::where('user_id', $userId)
+            ->where('status', 'completed')
+            ->count();
 
-        // Trip yang akan datang untuk user ini
+        // Booking trip yang akan datang untuk user ini
         $upcomingTrips = Booking::with(['trip.route', 'trip.bus'])
-            ->where('user_id', Auth::id())
+            ->where('user_id', $userId)
             ->whereHas('trip', function ($query) {
                 $query->whereDate('departure_date', '>=', now());
             })
@@ -94,7 +103,9 @@ class DashboardController extends Controller
         return view('user.dashboard', compact(
             'userBookings',
             'totalBookings',
-            'upcomingTrips'
+            'upcomingTrips',
+            'activeBookingsCount',
+            'completedBookingsCount'
         ));
     }
 }

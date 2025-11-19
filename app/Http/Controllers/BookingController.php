@@ -22,7 +22,7 @@ class BookingController extends Controller
      */
     public function index()
     {
-        $bookings = Booking::with(['user', 'trip.route'])->orderBy('created_at', 'desc')->paginate(10);
+        $bookings = Booking::with(['user', 'trip.route', 'latestWhatsappLog'])->orderBy('created_at', 'desc')->paginate(10);
         return view('admin.bookings.index', compact('bookings'));
     }
 
@@ -82,7 +82,7 @@ class BookingController extends Controller
      */
     public function show(string $id)
     {
-        $booking = Booking::with(['user', 'trip.route', 'trip.bus'])->findOrFail($id);
+        $booking = Booking::with(['user', 'trip.route', 'trip.bus', 'latestWhatsappLog'])->findOrFail($id);
 
         // Hanya admin atau pemilik booking yang bisa melihat
         if (!Auth::user()->isAdmin() && $booking->user_id !== Auth::id()) {

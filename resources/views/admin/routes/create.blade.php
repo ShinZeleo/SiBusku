@@ -7,48 +7,49 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm">
                 <div class="p-6 text-gray-900">
-                    <h1 class="text-2xl font-bold mb-6">Tambah Rute Baru</h1>
-                    
-                    <form action="{{ route('admin.routes.store') }}" method="POST">
+                    <div class="mb-6 border-b border-slate-100 pb-4">
+                        <h1 class="text-2xl font-bold text-slate-900">Tambah Rute Baru</h1>
+                        <p class="text-sm text-slate-500">Masukkan detail rute untuk memperluas jaringan perjalanan.</p>
+                    </div>
+
+                    <form action="{{ route('admin.routes.store') }}" method="POST" class="space-y-6">
                         @csrf
-                        <div class="space-y-6">
-                            <div>
-                                <label for="origin_city" class="block text-sm font-medium text-gray-700">Kota Asal</label>
-                                <input type="text" name="origin_city" id="origin_city" value="{{ old('origin_city') }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('origin_city') border-red-500 @enderror" required>
-                                @error('origin_city')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="destination_city" class="block text-sm font-medium text-gray-700">Kota Tujuan</label>
-                                <input type="text" name="destination_city" id="destination_city" value="{{ old('destination_city') }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('destination_city') border-red-500 @enderror" required>
-                                @error('destination_city')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="duration_estimate" class="block text-sm font-medium text-gray-700">Perkiraan Durasi (jam)</label>
-                                <input type="number" step="0.01" name="duration_estimate" id="duration_estimate" value="{{ old('duration_estimate') }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm @error('duration_estimate') border-red-500 @enderror" required min="0.1">
-                                @error('duration_estimate')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            
-                            <div>
-                                <label for="is_active" class="flex items-center">
-                                    <input type="checkbox" name="is_active" id="is_active" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" {{ old('is_active') ? 'checked' : '' }}>
-                                    <span class="ml-2 block text-sm text-gray-900">Rute Aktif</span>
-                                </label>
-                            </div>
-                            
-                            <div class="flex items-center justify-end">
-                                <a href="{{ route('admin.routes.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">Batal</a>
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Simpan</button>
-                            </div>
+                        <div>
+                            <label for="origin_city" class="block text-sm font-semibold text-slate-700">Kota Asal</label>
+                            <input type="text" name="origin_city" id="origin_city" value="{{ old('origin_city') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('origin_city') border-rose-400 @enderror" required>
+                            @error('origin_city')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="destination_city" class="block text-sm font-semibold text-slate-700">Kota Tujuan</label>
+                            <input type="text" name="destination_city" id="destination_city" value="{{ old('destination_city') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('destination_city') border-rose-400 @enderror" required>
+                            @error('destination_city')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="duration_estimate" class="block text-sm font-semibold text-slate-700">Perkiraan Durasi (jam)</label>
+                            <input type="number" step="0.01" name="duration_estimate" id="duration_estimate" value="{{ old('duration_estimate') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 @error('duration_estimate') border-rose-400 @enderror" required min="0.1">
+                            @error('duration_estimate')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="is_active" class="flex items-center text-sm font-medium text-slate-700">
+                                <input type="checkbox" name="is_active" id="is_active" value="1" class="rounded border-slate-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" {{ old('is_active') ? 'checked' : '' }}>
+                                <span class="ml-2">Rute Aktif</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3">
+                            <a href="{{ route('admin.routes.index') }}" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Batal</a>
+                            <button type="submit" class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Simpan</button>
                         </div>
                     </form>
                 </div>
