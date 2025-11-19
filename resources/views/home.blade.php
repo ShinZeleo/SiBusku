@@ -9,11 +9,14 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <h1 class="text-3xl font-bold text-center mb-8">Selamat Datang di SIBUSKU</h1>
-                    <p class="text-lg text-center mb-10">Sistem Booking Tiket Bus Antar Kota</p>
-                    
+                    <div class="mb-10 text-center space-y-4">
+                        <p class="text-sm uppercase tracking-widest text-slate-500">Pesan Tiket Bus Mudah</p>
+                        <h1 class="text-3xl font-bold text-slate-900">Selamat Datang di SIBUSKU</h1>
+                        <p class="text-base text-slate-600 max-w-2xl mx-auto">Sistem booking tiket bus antar kota dengan jadwal terlengkap dan proses pemesanan yang cepat.</p>
+                    </div>
+
                     <!-- Search Form -->
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md mb-10">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-10">
                         <h2 class="text-xl font-semibold mb-4">Cari Jadwal Perjalanan</h2>
                         <form action="{{ route('search.trips') }}" method="POST">
                             @csrf
