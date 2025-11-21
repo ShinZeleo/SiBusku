@@ -26,15 +26,41 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        try {
+            $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+            // Validasi sudah dilakukan di ProfileUpdateRequest
+            $validated = $request->validated();
+
+            // Normalisasi nomor telepon sebelum fill
+            if (isset($validated['phone'])) {
+                $phone = preg_replace('/[^0-9]/', '', $validated['phone']);
+                if (str_starts_with($phone, '0')) {
+                    $phone = '62' . substr($phone, 1);
+                }
+                $validated['phone'] = $phone;
+            }
+
+            $user->fill($validated);
+
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
+
+            $user->save();
+
+            return Redirect::route('profile.edit')
+                ->with('status', 'profile-updated')
+                ->with('success', 'Profile berhasil diperbarui!');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Profile update failed', [
+                'user_id' => $request->user()->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return Redirect::route('profile.edit')
+                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui profile. Silakan coba lagi.']);
         }
-
-        $request->user()->save();
-
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**

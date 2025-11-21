@@ -2,79 +2,81 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
+use App\Models\BookingStatusLog;
 use App\Models\Trip;
-use App\Models\User;
-use App\Services\WhatsAppService;
+use App\Services\BookingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 
 class BookingController extends Controller
 {
-    public function __construct()
-    {
-        // Middleware diterapkan di route, bukan di sini pada Laravel 11
-    }
+    public function __construct(
+        private BookingService $bookingService
+    ) {}
 
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $bookings = Booking::with(['user', 'trip.route', 'latestWhatsappLog'])->orderBy('created_at', 'desc')->paginate(10);
+        $bookings = Booking::with(['user', 'trip.route', 'latestWhatsappLog', 'bookingSeats'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
         return view('admin.bookings.index', compact('bookings'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        abort(404); // Booking tidak dibuat langsung dari sini
+        $tripId = $request->query('trip_id');
+        if (!$tripId) {
+            return Redirect::route('home')->with('error', 'Pilih trip terlebih dahulu.');
+        }
+
+        $trip = Trip::with(['route', 'bus'])->findOrFail($tripId);
+        $selectedSeats = $request->query('seats', '');
+
+        return view('bookings.create', compact('trip', 'selectedSeats'));
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * Menggunakan BookingService untuk business logic
      */
-    public function store(Request $request)
+    public function store(StoreBookingRequest $request)
     {
-        $request->validate([
-            'trip_id' => 'required|exists:trips,id',
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:20',
-            'seats_count' => 'required|integer|min:1',
-        ]);
+        try {
+            $booking = $this->bookingService->createBooking([
+                'user_id' => Auth::id(),
+                'trip_id' => $request->trip_id,
+                'customer_name' => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
+                'selected_seats' => $request->selected_seats,
+            ]);
 
-        $trip = Trip::findOrFail($request->trip_id);
+            // Redirect ke success page dengan booking code
+            return Redirect::route('bookings.success', $booking->id)
+                ->with('booking_code', 'SIB-' . str_pad($booking->id, 4, '0', STR_PAD_LEFT));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return Redirect::back()
+                ->withInput()
+                ->withErrors($e->errors());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Booking creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-        // Cek ketersediaan kursi
-        if ($trip->available_seats < $request->seats_count) {
-            return Redirect::back()->withErrors(['seats_count' => 'Kursi tidak tersedia. Hanya ' . $trip->available_seats . ' kursi tersisa.']);
+            return Redirect::back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan saat membuat booking. Silakan coba lagi.']);
         }
-
-        // Hitung total harga
-        $totalPrice = $trip->price * $request->seats_count;
-
-        // Kurangi kursi yang tersedia
-        $trip->decrement('available_seats', $request->seats_count);
-
-        // Buat booking
-        $booking = Booking::create([
-            'user_id' => Auth::id(),
-            'trip_id' => $request->trip_id,
-            'customer_name' => $request->customer_name,
-            'customer_phone' => $request->customer_phone,
-            'seats_count' => $request->seats_count,
-            'total_price' => $totalPrice,
-            'status' => 'pending',
-            'payment_status' => 'pending',
-        ]);
-
-        // Kirim notifikasi WhatsApp
-        \App\Services\WhatsAppService::notifyBookingCreated($booking);
-
-        return Redirect::route('user.bookings.index')->with('success', 'Booking berhasil dibuat. Silakan lakukan pembayaran segera.');
     }
 
     /**
@@ -82,7 +84,14 @@ class BookingController extends Controller
      */
     public function show(string $id)
     {
-        $booking = Booking::with(['user', 'trip.route', 'trip.bus', 'latestWhatsappLog'])->findOrFail($id);
+        $booking = Booking::with([
+            'user',
+            'trip.route',
+            'trip.bus',
+            'latestWhatsappLog',
+            'bookingSeats',
+            'statusLogs.user'
+        ])->findOrFail($id);
 
         // Hanya admin atau pemilik booking yang bisa melihat
         if (!Auth::user()->isAdmin() && $booking->user_id !== Auth::id()) {
@@ -97,7 +106,7 @@ class BookingController extends Controller
      */
     public function edit(string $id)
     {
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::with(['trip', 'bookingSeats'])->findOrFail($id);
         return view('admin.bookings.edit', compact('booking'));
     }
 
@@ -111,20 +120,74 @@ class BookingController extends Controller
         $request->validate([
             'status' => 'required|in:pending,confirmed,cancelled,completed',
             'payment_status' => 'required|in:pending,paid,failed,refunded',
+            'keterangan' => 'nullable|string|max:500',
         ]);
 
         $oldStatus = $booking->status;
+        $oldPaymentStatus = $booking->payment_status;
+
+        // Update booking
         $booking->update([
             'status' => $request->status,
             'payment_status' => $request->payment_status,
         ]);
 
-        // Jika status booking diubah menjadi confirmed, kirim notifikasi WA
-        if ($request->status === 'confirmed' && $oldStatus !== 'confirmed') {
-            \App\Services\WhatsAppService::notifyBookingConfirmed($booking);
+        // Update status menggunakan service (akan trigger event)
+        if ($oldStatus !== $request->status) {
+            $this->bookingService->updateBookingStatus($booking, $request->status, $request->keterangan);
         }
 
-        return Redirect::route('admin.bookings.index')->with('success', 'Booking berhasil diperbarui.');
+        // Jika status booking diubah menjadi confirmed, kirim notifikasi WA
+        if ($request->status === 'confirmed' && $oldStatus !== 'confirmed') {
+            try {
+                \App\Services\WhatsAppService::notifyBookingConfirmed($booking);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('WhatsApp confirmation notification failed', [
+                    'booking_id' => $booking->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return Redirect::route('admin.bookings.index')
+            ->with('success', 'Booking berhasil diperbarui.');
+    }
+
+    /**
+     * Cancel booking oleh user
+     */
+    public function cancel(Request $request, string $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $this->authorize('cancel', $booking);
+
+        try {
+            $this->bookingService->cancelBookingByUser($booking, Auth::id());
+
+            return Redirect::route('user.bookings.index')
+                ->with('success', 'Booking berhasil dibatalkan.');
+        } catch (\Throwable $e) {
+            return Redirect::back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Show success page setelah booking
+     */
+    public function success(string $id)
+    {
+        $booking = Booking::with(['trip.route', 'trip.bus', 'bookingSeats'])->findOrFail($id);
+
+        // Hanya pemilik booking yang bisa akses
+        if (!Auth::user()->isAdmin() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $bookingCode = 'SIB-' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
+
+        return view('bookings.success', compact('booking', 'bookingCode'));
     }
 
     /**
@@ -132,15 +195,56 @@ class BookingController extends Controller
      */
     public function destroy(string $id)
     {
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::with('bookingSeats')->findOrFail($id);
 
-        // Kembalikan jumlah kursi ke trip jika booking dibatalkan
-        if ($booking->status !== 'cancelled') {
-            $booking->trip()->increment('available_seats', $booking->seats_count);
+        DB::transaction(function () use ($booking) {
+            // Kembalikan jumlah kursi ke trip jika booking belum dibatalkan
+            if ($booking->status !== 'cancelled') {
+                $booking->trip()->increment('available_seats', $booking->seats_count);
+            }
+
+            // Hapus booking seats
+            $booking->bookingSeats()->delete();
+
+            // Hapus booking
+            $booking->delete();
+        });
+
+        return Redirect::route('admin.bookings.index')
+            ->with('success', 'Booking berhasil dihapus.');
+    }
+
+    /**
+     * Download PDF ticket untuk user
+     */
+    public function downloadTicket(string $id)
+    {
+        $booking = Booking::with([
+            'trip.route',
+            'trip.bus',
+            'bookingSeats'
+        ])->findOrFail($id);
+
+        // Hanya pemilik booking yang bisa download
+        if (!Auth::user()->isAdmin() && $booking->user_id !== Auth::id()) {
+            abort(403);
         }
 
-        $booking->delete();
-        return Redirect::route('admin.bookings.index')->with('success', 'Booking berhasil dihapus.');
+        // Generate QR Code sederhana (bisa diganti dengan library QR code)
+        $qrData = "SIBUSKU|{$booking->id}|{$booking->customer_phone}";
+
+        try {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('bookings.ticket-pdf', compact('booking', 'qrData'));
+            return $pdf->download("ticket-{$booking->id}.pdf");
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('PDF generation failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return Redirect::back()
+                ->with('error', 'Gagal menghasilkan PDF. Pastikan package barryvdh/laravel-dompdf sudah terinstall.');
+        }
     }
 
     /**
@@ -148,7 +252,7 @@ class BookingController extends Controller
      */
     public function exportCsv()
     {
-        $bookings = Booking::with(['user', 'trip.route', 'trip.bus'])->get();
+        $bookings = Booking::with(['user', 'trip.route', 'trip.bus', 'bookingSeats'])->get();
 
         $fileName = 'bookings_' . now()->format('Y-m-d_H-i-s') . '.csv';
 
@@ -156,7 +260,7 @@ class BookingController extends Controller
             "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$fileName",
             "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Cache-Control" => "must-revalidate, pre-check=0, post-check=0",
             "Expires" => "0"
         ];
 
@@ -170,6 +274,7 @@ class BookingController extends Controller
                 'Tanggal Berangkat',
                 'Jam Berangkat',
                 'Jumlah Kursi',
+                'Nomor Kursi',
                 'Total Harga',
                 'Status Booking',
                 'Status Pembayaran',
@@ -177,6 +282,8 @@ class BookingController extends Controller
             ]);
 
             foreach ($bookings as $booking) {
+                $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ');
+
                 fputcsv($file, [
                     $booking->id,
                     $booking->customer_name,
@@ -185,6 +292,7 @@ class BookingController extends Controller
                     $booking->trip->departure_date,
                     $booking->trip->departure_time,
                     $booking->seats_count,
+                    $seatNumbers ?: '-',
                     $booking->total_price,
                     $booking->status,
                     $booking->payment_status,

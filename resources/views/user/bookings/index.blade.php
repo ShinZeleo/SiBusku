@@ -12,7 +12,7 @@
                     <div class="flex justify-between items-center mb-6">
                         <h1 class="text-2xl font-bold">Riwayat Booking Saya</h1>
                     </div>
-                    
+
                     @if($bookings->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -53,14 +53,23 @@
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <a href="{{ route('user.bookings.show', $booking->id) }}" class="text-indigo-600 hover:text-indigo-900">Lihat Detail</a>
+                                                <div class="flex items-center gap-3">
+                                                    <a href="{{ route('user.bookings.show', $booking->id) }}" class="text-indigo-600 hover:text-indigo-900">Lihat Detail</a>
+                                                    @if($booking->status === 'pending')
+                                                        <form action="{{ route('bookings.cancel', $booking->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan booking ini?')">
+                                                            @csrf
+                                                            @method('POST')
+                                                            <button type="submit" class="text-red-600 hover:text-red-900">Batal</button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <div class="mt-4">
                             {{ $bookings->links() }}
                         </div>

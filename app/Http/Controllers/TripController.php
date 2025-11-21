@@ -63,10 +63,14 @@ class TripController extends Controller
 
     /**
      * Display the specified resource.
+     * Bisa diakses publik untuk trip aktif
      */
     public function show(string $id)
     {
-        $trip = Trip::with(['route', 'bus'])->findOrFail($id);
+        $trip = Trip::with(['route', 'bus'])
+            ->where('status', 'scheduled')
+            ->findOrFail($id);
+
         return view('trips.show', compact('trip'));
     }
 

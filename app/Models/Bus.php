@@ -22,4 +22,31 @@ class Bus extends Model
     {
         return $this->hasMany(Trip::class);
     }
+
+    // Relasi: Bus memiliki banyak BusSeat
+    public function seats()
+    {
+        return $this->hasMany(BusSeat::class);
+    }
+
+    /**
+     * Ambil layout kursi yang aktif, diurutkan
+     */
+    public function getSeatLayoutAttribute()
+    {
+        return $this->seats()
+            ->active()
+            ->ordered()
+            ->get()
+            ->map(function ($seat) {
+                return [
+                    'seat_number' => $seat->seat_number,
+                    'row_index' => $seat->row_index,
+                    'col_index' => $seat->col_index,
+                    'deck' => $seat->deck,
+                    'section' => $seat->section,
+                ];
+            })
+            ->toArray();
+    }
 }

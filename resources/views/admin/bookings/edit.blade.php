@@ -45,6 +45,18 @@
                             </div>
                         </div>
 
+                        <div>
+                            <label for="keterangan" class="block text-sm font-semibold text-slate-700">Keterangan (Opsional)</label>
+                            <textarea
+                                name="keterangan"
+                                id="keterangan"
+                                rows="3"
+                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                                placeholder="Tambahkan catatan tentang perubahan status ini..."
+                            ></textarea>
+                            <p class="mt-1 text-xs text-slate-500">Keterangan ini akan dicatat dalam log perubahan status.</p>
+                        </div>
+
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <p class="text-sm font-medium text-slate-500">ID Booking</p>

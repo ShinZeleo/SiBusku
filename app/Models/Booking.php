@@ -15,6 +15,7 @@ class Booking extends Model
         'customer_name',
         'customer_phone',
         'seats_count',
+        'selected_seats',
         'total_price',
         'status',
         'payment_status',
@@ -46,6 +47,18 @@ class Booking extends Model
     public function latestWhatsappLog()
     {
         return $this->hasOne(WhatsAppLog::class)->latestOfMany();
+    }
+
+    // Relasi: Booking memiliki banyak BookingSeat
+    public function bookingSeats()
+    {
+        return $this->hasMany(BookingSeat::class);
+    }
+
+    // Relasi: Booking memiliki banyak BookingStatusLog
+    public function statusLogs()
+    {
+        return $this->hasMany(BookingStatusLog::class)->latest();
     }
 
     // Accessor: Format harga total

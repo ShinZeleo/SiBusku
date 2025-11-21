@@ -65,8 +65,22 @@
             </main>
         </div>
 
-        @if (! empty($successMessage) && str_contains(strtolower($successMessage), 'whatsapp'))
-            <x-wa-toast :message="$successMessage" />
-        @endif
+        <!-- Toast Notification -->
+        <x-toast />
+
+        <!-- Alpine Store untuk Toast -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                @if(session('success'))
+                    @if(str_contains(strtolower(session('success')), 'whatsapp'))
+                        Alpine.store('toast').showToast('{{ session('success') }}', 'success');
+                    @endif
+                @endif
+
+                @if(session('error'))
+                    Alpine.store('toast').showToast('{{ session('error') }}', 'error');
+                @endif
+            });
+        </script>
     </body>
 </html>
