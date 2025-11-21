@@ -46,13 +46,13 @@ class BookingService
             $user = \App\Models\User::findOrFail($data['user_id']);
 
             // Buat booking
-            // Note: customer_name dan customer_phone disimpan sebagai snapshot untuk kompatibilitas,
-            // tetapi di view dan service selalu menggunakan accessor yang mengambil dari user
+            // customer_name dan customer_phone disimpan sebagai snapshot untuk kompatibilitas
+            // Di view dan service selalu menggunakan accessor yang mengambil dari user
             $booking = Booking::create([
                 'user_id' => $data['user_id'],
                 'trip_id' => $trip->id,
-                'customer_name' => $data['customer_name'] ?? $user->name, // Snapshot, tapi tidak digunakan di view
-                'customer_phone' => $data['customer_phone'] ?? $user->phone, // Snapshot, tapi tidak digunakan di view
+                'customer_name' => $data['customer_name'] ?? $user->name,
+                'customer_phone' => $data['customer_phone'] ?? $user->phone,
                 'seats_count' => count($selectedSeats),
                 'selected_seats' => implode(', ', $selectedSeats),
                 'total_price' => $totalPrice,

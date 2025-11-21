@@ -25,14 +25,13 @@ class WhatsAppService
         ?Booking $booking = null,
         int $retryAttempts = 2
     ): bool {
-        // Check if WhatsApp is enabled (can be disabled in local env)
         if (!Config::get('services.fonnte.enabled', true)) {
             Log::info('WhatsApp service disabled, skipping send', [
                 'phone' => $phone,
                 'booking_id' => $booking?->id,
             ]);
             self::logToDatabase($phone, $message, 'pending', $booking, 'Service disabled');
-            return true; // Return true to not block booking flow
+            return true;
         }
 
         $url = Config::get('services.fonnte.url');
@@ -49,8 +48,7 @@ class WhatsAppService
             return false;
         }
 
-        // Set timeout kecil untuk tidak memblokir response (optimasi booking flow)
-        $timeout = Config::get('services.fonnte.timeout', 3); // Default 3 detik
+        $timeout = Config::get('services.fonnte.timeout', 3);
 
         // Normalisasi nomor: buang karakter non angka
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -76,8 +74,6 @@ class WhatsAppService
 
         while ($attempt <= $retryAttempts) {
             try {
-                // Coba dengan JSON dulu (lebih umum untuk API modern)
-                // Timeout dikurangi untuk mempercepat booking flow
                 $response = Http::timeout($timeout)
                     ->withHeaders([
                         'Authorization' => $token,
@@ -116,7 +112,6 @@ class WhatsAppService
                     return true;
                 }
 
-                // Jika gagal dan masih ada retry, tunggu sebentar
                 if ($attempt < $retryAttempts) {
                     $lastError = $response->body();
                     Log::warning('WhatsApp send failed, retrying', [
@@ -124,8 +119,6 @@ class WhatsAppService
                         'attempt' => $attempt + 1,
                         'response' => $lastError,
                     ]);
-                    // Don't sleep in sync mode - let it fail fast for better UX
-                    // sleep(1); // Removed to speed up booking flow
                 } else {
                     $lastError = $response->body();
                     Log::error('WhatsApp send failed after retries', [
@@ -142,10 +135,7 @@ class WhatsAppService
                     'error' => $lastError,
                 ]);
 
-                // Jika masih ada retry, coba lagi
                 if ($attempt < $retryAttempts) {
-                    // Don't sleep in sync mode - let it fail fast for better UX
-                    // sleep(1); // Removed to speed up booking flow
                 } else {
                     // Log ke database dengan status failed
                     self::logToDatabase(
@@ -254,7 +244,6 @@ class WhatsAppService
             $route = $trip->route;
             $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ') ?: $booking->selected_seats;
 
-            // Use customer_name accessor which gets from user for consistency
             $customerName = $booking->customer_name;
             $message =
                 "✅ Booking Dikonfirmasi!\n\n" .
