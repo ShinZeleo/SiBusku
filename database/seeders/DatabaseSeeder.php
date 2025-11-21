@@ -25,18 +25,18 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Admin SIBUSKU',
                 'password' => Hash::make('password'),
-                'phone' => '6281234567890',
+                'phone' => '62895802990864',
                 'role' => 'admin',
                 'email_verified_at' => now(),
             ]
         );
 
         $user1 = User::updateOrCreate(
-            ['email' => 'budi@example.com'],
+            ['email' => 'dalvyn@example.com'],
             [
-                'name' => 'Budi Santoso',
+                'name' => 'Dalvyn Santoso',
                 'password' => Hash::make('password'),
-                'phone' => '6281234567891',
+                'phone' => '62895370323387',
                 'role' => 'user',
                 'email_verified_at' => now(),
             ]
@@ -260,7 +260,7 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Admin: admin@sibusku.com / password');
-        $this->command->info('User1: budi@example.com / password');
+        $this->command->info('User1: dalvyn@example.com / password');
         $this->command->info('User2: siti@example.com / password');
     }
 }
