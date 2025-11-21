@@ -25,6 +25,16 @@ class WhatsAppService
         ?Booking $booking = null,
         int $retryAttempts = 2
     ): bool {
+        // Check if WhatsApp is enabled (can be disabled in local env)
+        if (!Config::get('services.fonnte.enabled', true)) {
+            Log::info('WhatsApp service disabled, skipping send', [
+                'phone' => $phone,
+                'booking_id' => $booking?->id,
+            ]);
+            self::logToDatabase($phone, $message, 'pending', $booking, 'Service disabled');
+            return true; // Return true to not block booking flow
+        }
+
         $url = Config::get('services.fonnte.url');
         $token = Config::get('services.fonnte.token');
         $countryCode = Config::get('services.fonnte.country_code', '62');
@@ -38,6 +48,9 @@ class WhatsAppService
             self::logToDatabase($phone, $message, 'failed', $booking, 'Service not configured');
             return false;
         }
+
+        // Set timeout kecil untuk tidak memblokir response (optimasi booking flow)
+        $timeout = Config::get('services.fonnte.timeout', 3); // Default 3 detik
 
         // Normalisasi nomor: buang karakter non angka
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -64,7 +77,8 @@ class WhatsAppService
         while ($attempt <= $retryAttempts) {
             try {
                 // Coba dengan JSON dulu (lebih umum untuk API modern)
-                $response = Http::timeout(15)
+                // Timeout dikurangi untuk mempercepat booking flow
+                $response = Http::timeout($timeout)
                     ->withHeaders([
                         'Authorization' => $token,
                         'Content-Type' => 'application/json',
@@ -73,7 +87,7 @@ class WhatsAppService
 
                 // Jika gagal, coba dengan multipart (fallback)
                 if (!$response->successful() && $attempt === 0) {
-                    $response = Http::timeout(15)
+                    $response = Http::timeout($timeout)
                         ->withHeaders([
                             'Authorization' => $token,
                         ])
@@ -110,7 +124,8 @@ class WhatsAppService
                         'attempt' => $attempt + 1,
                         'response' => $lastError,
                     ]);
-                    sleep(1); // Tunggu 1 detik sebelum retry
+                    // Don't sleep in sync mode - let it fail fast for better UX
+                    // sleep(1); // Removed to speed up booking flow
                 } else {
                     $lastError = $response->body();
                     Log::error('WhatsApp send failed after retries', [
@@ -129,7 +144,8 @@ class WhatsAppService
 
                 // Jika masih ada retry, coba lagi
                 if ($attempt < $retryAttempts) {
-                    sleep(1);
+                    // Don't sleep in sync mode - let it fail fast for better UX
+                    // sleep(1); // Removed to speed up booking flow
                 } else {
                     // Log ke database dengan status failed
                     self::logToDatabase(
@@ -187,8 +203,10 @@ class WhatsAppService
             $route = $trip->route;
             $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ') ?: $booking->selected_seats;
 
+            // Use customer_name accessor which gets from user for consistency
+            $customerName = $booking->customer_name;
             $userMessage =
-                "Halo {$booking->customer_name}, booking tiket bus kamu sudah tercatat.\n\n" .
+                "Halo {$customerName}, booking tiket bus kamu sudah tercatat.\n\n" .
                 "Kode Booking: #{$booking->id}\n" .
                 "Rute: {$route->origin_city} → {$route->destination_city}\n" .
                 "Tanggal: " . \Carbon\Carbon::parse($trip->departure_date)->format('d M Y') . "\n" .
@@ -199,7 +217,8 @@ class WhatsAppService
                 "Status: Menunggu Konfirmasi\n\n" .
                 "Terima kasih telah menggunakan SIBUSKU!";
 
-            self::send($booking->customer_phone, $userMessage, $booking);
+            // Use getWhatsAppNumber() for consistency - always gets current user phone
+            self::send($booking->getWhatsAppNumber(), $userMessage, $booking);
 
             // Notify admin
             $adminPhone = Config::get('services.fonnte.admin_phone');
@@ -235,9 +254,11 @@ class WhatsAppService
             $route = $trip->route;
             $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ') ?: $booking->selected_seats;
 
+            // Use customer_name accessor which gets from user for consistency
+            $customerName = $booking->customer_name;
             $message =
                 "✅ Booking Dikonfirmasi!\n\n" .
-                "Halo {$booking->customer_name},\n\n" .
+                "Halo {$customerName},\n\n" .
                 "Booking tiket bus kamu SUDAH DIKONFIRMASI.\n\n" .
                 "Kode Booking: #{$booking->id}\n" .
                 "Rute: {$route->origin_city} → {$route->destination_city}\n" .

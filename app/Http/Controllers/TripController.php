@@ -58,7 +58,7 @@ class TripController extends Controller
             'available_seats' => $request->total_seats, // Awalnya tersedia semua
         ]);
 
-        return Redirect::route('trips.index')->with('success', 'Trip berhasil ditambahkan.');
+        return Redirect::route('admin.trips.index')->with('success', 'Trip berhasil ditambahkan.');
     }
 
     /**
@@ -119,7 +119,7 @@ class TripController extends Controller
             'available_seats' => $newAvailableSeats,
         ]);
 
-        return Redirect::route('trips.index')->with('success', 'Trip berhasil diperbarui.');
+        return Redirect::route('admin.trips.index')->with('success', 'Trip berhasil diperbarui.');
     }
 
     /**
@@ -131,11 +131,11 @@ class TripController extends Controller
 
         // Jika trip memiliki booking, tidak bisa dihapus
         if($trip->bookings()->count() > 0){
-            return Redirect::route('trips.index')->with('error', 'Trip tidak bisa dihapus karena memiliki booking terkait.');
+            return Redirect::route('admin.trips.index')->with('error', 'Trip tidak bisa dihapus karena memiliki booking terkait.');
         }
 
         $trip->delete();
-        return Redirect::route('trips.index')->with('success', 'Trip berhasil dihapus.');
+        return Redirect::route('admin.trips.index')->with('success', 'Trip berhasil dihapus.');
     }
 
     /**

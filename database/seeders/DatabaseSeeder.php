@@ -19,57 +19,71 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create Users
-        $admin = User::create([
-            'name' => 'Admin SIBUSKU',
-            'email' => 'admin@sibusku.com',
-            'password' => Hash::make('password'),
-            'phone' => '6281234567890',
-            'role' => 'admin',
-            'email_verified_at' => now(),
-        ]);
+        // 1. Create Users (gunakan updateOrCreate untuk menghindari duplicate)
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@sibusku.com'],
+            [
+                'name' => 'Admin SIBUSKU',
+                'password' => Hash::make('password'),
+                'phone' => '6281234567890',
+                'role' => 'admin',
+                'email_verified_at' => now(),
+            ]
+        );
 
-        $user1 = User::create([
-            'name' => 'Budi Santoso',
-            'email' => 'budi@example.com',
-            'password' => Hash::make('password'),
-            'phone' => '6281234567891',
-            'role' => 'user',
-            'email_verified_at' => now(),
-        ]);
+        $user1 = User::updateOrCreate(
+            ['email' => 'budi@example.com'],
+            [
+                'name' => 'Budi Santoso',
+                'password' => Hash::make('password'),
+                'phone' => '6281234567891',
+                'role' => 'user',
+                'email_verified_at' => now(),
+            ]
+        );
 
-        $user2 = User::create([
-            'name' => 'Siti Nurhaliza',
-            'email' => 'siti@example.com',
-            'password' => Hash::make('password'),
-            'phone' => '6281234567892',
-            'role' => 'user',
-            'email_verified_at' => now(),
-        ]);
+        $user2 = User::updateOrCreate(
+            ['email' => 'siti@example.com'],
+            [
+                'name' => 'Siti Nurhaliza',
+                'password' => Hash::make('password'),
+                'phone' => '6281234567892',
+                'role' => 'user',
+                'email_verified_at' => now(),
+            ]
+        );
 
-        // 2. Create Buses dengan Seat Layout
-        $bus1 = Bus::create([
-            'name' => 'Sinar Jaya',
-            'bus_class' => 'Eksekutif',
-            'plate_number' => 'B 1234 ABC',
-            'capacity' => 32,
-        ]);
+        // 2. Create Buses dengan Seat Layout (gunakan updateOrCreate)
+        $bus1 = Bus::updateOrCreate(
+            ['plate_number' => 'B 1234 ABC'],
+            [
+                'name' => 'Sinar Jaya',
+                'bus_class' => 'Eksekutif',
+                'capacity' => 32,
+            ]
+        );
 
-        $bus2 = Bus::create([
-            'name' => 'Lorena',
-            'bus_class' => 'Bisnis',
-            'plate_number' => 'B 5678 DEF',
-            'capacity' => 40,
-        ]);
+        $bus2 = Bus::updateOrCreate(
+            ['plate_number' => 'B 5678 DEF'],
+            [
+                'name' => 'Lorena',
+                'bus_class' => 'Bisnis',
+                'capacity' => 40,
+            ]
+        );
 
-        $bus3 = Bus::create([
-            'name' => 'Pahala Kencana',
-            'bus_class' => 'Eksekutif',
-            'plate_number' => 'B 9012 GHI',
-            'capacity' => 36,
-        ]);
+        $bus3 = Bus::updateOrCreate(
+            ['plate_number' => 'B 9012 GHI'],
+            [
+                'name' => 'Pahala Kencana',
+                'bus_class' => 'Eksekutif',
+                'capacity' => 36,
+            ]
+        );
 
         // Create seat layout untuk bus1 (32 kursi: 8 rows x 4 cols)
+        // Hapus seat lama jika ada, lalu buat baru
+        $bus1->seats()->delete();
         $rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         foreach ($rows as $rowIndex => $row) {
             for ($col = 1; $col <= 4; $col++) {
@@ -85,6 +99,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // Create seat layout untuk bus2 (40 kursi: 10 rows x 4 cols)
+        $bus2->seats()->delete();
         $rows2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
         foreach ($rows2 as $rowIndex => $row) {
             for ($col = 1; $col <= 4; $col++) {
@@ -100,6 +115,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // Create seat layout untuk bus3 (36 kursi: 9 rows x 4 cols)
+        $bus3->seats()->delete();
         $rows3 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
         foreach ($rows3 as $rowIndex => $row) {
             for ($col = 1; $col <= 4; $col++) {
@@ -114,34 +130,50 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 3. Create Routes
-        $route1 = Route::create([
-            'origin_city' => 'Jakarta',
-            'destination_city' => 'Bandung',
-            'distance_km' => 150,
-            'duration_estimate' => 3,
-        ]);
+        // 3. Create Routes (gunakan updateOrCreate)
+        $route1 = Route::updateOrCreate(
+            [
+                'origin_city' => 'Jakarta',
+                'destination_city' => 'Bandung',
+            ],
+            [
+                'duration_estimate' => 3,
+                'is_active' => true,
+            ]
+        );
 
-        $route2 = Route::create([
-            'origin_city' => 'Jakarta',
-            'destination_city' => 'Yogyakarta',
-            'distance_km' => 550,
-            'duration_estimate' => 10,
-        ]);
+        $route2 = Route::updateOrCreate(
+            [
+                'origin_city' => 'Jakarta',
+                'destination_city' => 'Yogyakarta',
+            ],
+            [
+                'duration_estimate' => 10,
+                'is_active' => true,
+            ]
+        );
 
-        $route3 = Route::create([
-            'origin_city' => 'Bandung',
-            'destination_city' => 'Yogyakarta',
-            'distance_km' => 400,
-            'duration_estimate' => 7,
-        ]);
+        $route3 = Route::updateOrCreate(
+            [
+                'origin_city' => 'Bandung',
+                'destination_city' => 'Yogyakarta',
+            ],
+            [
+                'duration_estimate' => 7,
+                'is_active' => true,
+            ]
+        );
 
-        $route4 = Route::create([
-            'origin_city' => 'Jakarta',
-            'destination_city' => 'Surabaya',
-            'distance_km' => 800,
-            'duration_estimate' => 14,
-        ]);
+        $route4 = Route::updateOrCreate(
+            [
+                'origin_city' => 'Jakarta',
+                'destination_city' => 'Surabaya',
+            ],
+            [
+                'duration_estimate' => 14,
+                'is_active' => true,
+            ]
+        );
 
         // 4. Create Trips
         $trips = [];

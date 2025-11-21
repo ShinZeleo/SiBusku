@@ -31,7 +31,9 @@ class UserBookingController extends Controller
      */
     public function show($id)
     {
-        $booking = Booking::with(['trip.route', 'trip.bus', 'latestWhatsappLog'])->findOrFail($id);
+        // Load user relation untuk konsistensi data (accessor akan menggunakan user->name dan user->phone)
+        $booking = Booking::with(['user', 'trip.route', 'trip.bus', 'latestWhatsappLog'])
+            ->findOrFail($id);
 
         // Hanya pemilik booking yang bisa melihat
         if ($booking->user_id !== Auth::id()) {

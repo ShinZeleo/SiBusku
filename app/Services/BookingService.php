@@ -34,22 +34,25 @@ class BookingService
             $validationResult = $this->seatService->validateSeats($trip, $selectedSeats);
 
             if (!$validationResult['valid']) {
-                throw new \Illuminate\Validation\ValidationException(
-                    \Illuminate\Support\Facades\Validator::make([], [])
-                        ->errors()
-                        ->add('selected_seats', $validationResult['message'])
-                );
+                $validator = \Illuminate\Support\Facades\Validator::make([], []);
+                $validator->errors()->add('selected_seats', $validationResult['message']);
+                throw new \Illuminate\Validation\ValidationException($validator);
             }
 
             // Hitung total harga
             $totalPrice = $trip->price * count($selectedSeats);
 
+            // Get user for consistency
+            $user = \App\Models\User::findOrFail($data['user_id']);
+
             // Buat booking
+            // Note: customer_name dan customer_phone disimpan sebagai snapshot untuk kompatibilitas,
+            // tetapi di view dan service selalu menggunakan accessor yang mengambil dari user
             $booking = Booking::create([
                 'user_id' => $data['user_id'],
                 'trip_id' => $trip->id,
-                'customer_name' => $data['customer_name'],
-                'customer_phone' => $data['customer_phone'],
+                'customer_name' => $data['customer_name'] ?? $user->name, // Snapshot, tapi tidak digunakan di view
+                'customer_phone' => $data['customer_phone'] ?? $user->phone, // Snapshot, tapi tidak digunakan di view
                 'seats_count' => count($selectedSeats),
                 'selected_seats' => implode(', ', $selectedSeats),
                 'total_price' => $totalPrice,
@@ -116,11 +119,9 @@ class BookingService
         }
 
         if ($booking->status !== 'pending') {
-            throw new \Illuminate\Validation\ValidationException(
-                \Illuminate\Support\Facades\Validator::make([], [])
-                    ->errors()
-                    ->add('status', 'Hanya booking dengan status pending yang bisa dibatalkan.')
-            );
+            $validator = \Illuminate\Support\Facades\Validator::make([], []);
+            $validator->errors()->add('status', 'Hanya booking dengan status pending yang bisa dibatalkan.');
+            throw new \Illuminate\Validation\ValidationException($validator);
         }
 
         $this->updateBookingStatus($booking, 'cancelled', 'Dibatalkan oleh user');

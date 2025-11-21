@@ -40,6 +40,8 @@ return [
         'token'        => env('FONNTE_API_TOKEN'),
         'admin_phone'  => env('FONNTE_ADMIN_PHONE'),
         'country_code' => env('FONNTE_DEFAULT_COUNTRY', '62'),
+        'enabled'      => env('WHATSAPP_ENABLED', true), // Can disable in local env
+        'timeout'      => env('WHATSAPP_TIMEOUT', 3), // Timeout in seconds (reduced for faster booking)
     ],
 
 ];

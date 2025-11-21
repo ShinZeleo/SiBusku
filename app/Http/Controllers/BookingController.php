@@ -178,7 +178,8 @@ class BookingController extends Controller
      */
     public function success(string $id)
     {
-        $booking = Booking::with(['trip.route', 'trip.bus', 'bookingSeats'])->findOrFail($id);
+        // Load user relation untuk konsistensi data
+        $booking = Booking::with(['user', 'trip.route', 'trip.bus', 'bookingSeats', 'latestWhatsappLog'])->findOrFail($id);
 
         // Hanya pemilik booking yang bisa akses
         if (!Auth::user()->isAdmin() && $booking->user_id !== Auth::id()) {
@@ -219,7 +220,9 @@ class BookingController extends Controller
      */
     public function downloadTicket(string $id)
     {
+        // Load user relation untuk konsistensi data
         $booking = Booking::with([
+            'user', // Penting untuk accessor customer_name dan customer_phone
             'trip.route',
             'trip.bus',
             'bookingSeats'

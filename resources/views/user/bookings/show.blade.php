@@ -18,7 +18,7 @@
                             {{ $booking->status_in_indonesian }}
                         </span>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Informasi Trip -->
                         <div class="bg-gray-50 p-6 rounded-lg">
@@ -50,7 +50,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Informasi Booking -->
                         <div class="bg-gray-50 p-6 rounded-lg">
                             <h2 class="text-lg font-semibold mb-4">Informasi Booking</h2>
@@ -90,7 +90,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Status Booking -->
                     <div class="mt-8">
                         <h2 class="text-lg font-semibold mb-4">Status Booking</h2>
@@ -120,7 +120,7 @@
                     <div class="mt-8">
                         <h2 class="text-lg font-semibold mb-4">Log WhatsApp Terbaru</h2>
                         @php
-                            $waLog = $booking->latestWhatsappLog;
+                            $waLog = $booking->latestWhatsappLog ?? null;
                             $map = [
                                 'sent' => ['label' => 'Sukses', 'class' => 'bg-emerald-100 text-emerald-800'],
                                 'pending' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
@@ -129,12 +129,13 @@
                         @endphp
 
                         <div class="bg-gray-50 p-6 rounded-lg">
-                            @if($waLog)
+                            @if($waLog && $waLog !== null)
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <p class="text-sm text-gray-500 mb-1">Status Notifikasi</p>
                                         @php
-                                            $info = $map[$waLog->status] ?? ['label' => strtoupper($waLog->status), 'class' => 'bg-gray-100 text-gray-800'];
+                                            $status = $waLog->status ?? 'unknown';
+                                            $info = $map[$status] ?? ['label' => strtoupper($status), 'class' => 'bg-gray-100 text-gray-800'];
                                         @endphp
                                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $info['class'] }}">
                                             {{ $info['label'] }}
@@ -142,12 +143,12 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-sm text-gray-500">{{ $waLog->sent_at ? 'Dikirim pada' : 'Dibuat pada' }}</p>
-                                        <p class="text-sm font-medium text-gray-700">{{ ($waLog->sent_at ?? $waLog->created_at)->format('d M Y H:i') }}</p>
+                                        <p class="text-sm font-medium text-gray-700">{{ \Carbon\Carbon::parse($waLog->sent_at ?? $waLog->created_at)->format('d M Y H:i') }}</p>
                                     </div>
                                 </div>
                                 <div class="mt-4">
                                     <p class="text-sm text-gray-500 mb-1">Pesan</p>
-                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ $waLog->message }}</p>
+                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ $waLog->message ?? '-' }}</p>
                                 </div>
                             @else
                                 <p class="text-sm text-gray-500">Belum ada log WhatsApp untuk booking ini.</p>
