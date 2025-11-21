@@ -7,17 +7,12 @@ use App\Models\WhatsAppLog;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class WhatsAppService
 {
     /**
      * Send WhatsApp message via Fonnte API
-     *
-     * @param string $phone Phone number (will be normalized)
-     * @param string $message Message content
-     * @param Booking|null $booking Related booking (for logging)
-     * @param int $retryAttempts Number of retry attempts on failure
-     * @return bool Success status
      */
     public static function send(
         string $phone,
@@ -25,6 +20,17 @@ class WhatsAppService
         ?Booking $booking = null,
         int $retryAttempts = 2
     ): bool {
+        // Cegah double send dengan cache lock (5 detik)
+        $cacheKey = 'whatsapp_send_' . md5($phone . $message . ($booking?->id ?? ''));
+        if (Cache::has($cacheKey)) {
+            Log::warning('WhatsApp send prevented (duplicate within 5 seconds)', [
+                'phone' => $phone,
+                'booking_id' => $booking?->id,
+            ]);
+            return false;
+        }
+        Cache::put($cacheKey, true, 5); // Lock selama 5 detik
+
         if (!Config::get('services.fonnte.enabled', true)) {
             Log::info('WhatsApp service disabled, skipping send', [
                 'phone' => $phone,
@@ -50,30 +56,29 @@ class WhatsAppService
 
         $timeout = Config::get('services.fonnte.timeout', 3);
 
-        // Normalisasi nomor: buang karakter non angka
+        // Normalisasi nomor
         $phone = preg_replace('/[^0-9]/', '', $phone);
-
-        // Jika nomor dimulai dengan 0, ganti dengan country code
         if (str_starts_with($phone, '0')) {
             $phone = $countryCode . substr($phone, 1);
         }
 
-        // Format payload sesuai dokumentasi Fonnte
+        // Format payload
         $payload = [
             'target' => $phone,
             'message' => $message,
         ];
 
-        // Jika perlu country code, tambahkan
         if ($countryCode && $countryCode !== '62') {
             $payload['countryCode'] = $countryCode;
         }
 
         $attempt = 0;
         $lastError = null;
+        $sent = false;
 
-        while ($attempt <= $retryAttempts) {
+        while ($attempt <= $retryAttempts && !$sent) {
             try {
+                // Coba dengan JSON
                 $response = Http::timeout($timeout)
                     ->withHeaders([
                         'Authorization' => $token,
@@ -81,7 +86,8 @@ class WhatsAppService
                     ])
                     ->post($url, $payload);
 
-                // Jika gagal, coba dengan multipart (fallback)
+                // Jika gagal dan attempt pertama, coba dengan multipart (fallback)
+                // HANYA jika response pertama tidak berhasil
                 if (!$response->successful() && $attempt === 0) {
                     $response = Http::timeout($timeout)
                         ->withHeaders([
@@ -92,38 +98,46 @@ class WhatsAppService
                 }
 
                 $success = $response->successful();
-                $status = $success ? 'sent' : 'failed';
-
-                // Log ke database
-                $log = self::logToDatabase(
-                    $phone,
-                    $message,
-                    $status,
-                    $booking,
-                    $success ? null : $response->body()
-                );
 
                 if ($success) {
+                    // Hanya log sekali jika berhasil
+                    $log = self::logToDatabase(
+                        $phone,
+                        $message,
+                        'sent',
+                        $booking,
+                        null
+                    );
                     Log::info('WhatsApp sent successfully', [
                         'phone' => $phone,
                         'booking_id' => $booking?->id,
                         'log_id' => $log?->id,
+                        'attempt' => $attempt + 1,
                     ]);
+                    $sent = true;
                     return true;
                 }
 
-                if ($attempt < $retryAttempts) {
+                // Jika gagal dan ini attempt terakhir, log sebagai failed
+                if ($attempt >= $retryAttempts) {
                     $lastError = $response->body();
-                    Log::warning('WhatsApp send failed, retrying', [
+                    self::logToDatabase(
+                        $phone,
+                        $message,
+                        'failed',
+                        $booking,
+                        $lastError
+                    );
+                    Log::error('WhatsApp send failed after retries', [
                         'phone' => $phone,
-                        'attempt' => $attempt + 1,
+                        'attempts' => $attempt + 1,
                         'response' => $lastError,
                     ]);
                 } else {
                     $lastError = $response->body();
-                    Log::error('WhatsApp send failed after retries', [
+                    Log::warning('WhatsApp send failed, retrying', [
                         'phone' => $phone,
-                        'attempts' => $attempt + 1,
+                        'attempt' => $attempt + 1,
                         'response' => $lastError,
                     ]);
                 }
@@ -135,9 +149,8 @@ class WhatsAppService
                     'error' => $lastError,
                 ]);
 
-                if ($attempt < $retryAttempts) {
-                } else {
-                    // Log ke database dengan status failed
+                // Jika ini attempt terakhir, log sebagai failed
+                if ($attempt >= $retryAttempts) {
                     self::logToDatabase(
                         $phone,
                         $message,
@@ -148,7 +161,9 @@ class WhatsAppService
                 }
             }
 
-            $attempt++;
+            if (!$sent) {
+                $attempt++;
+            }
         }
 
         return false;
@@ -188,41 +203,70 @@ class WhatsAppService
      */
     public static function notifyBookingCreated(Booking $booking): void
     {
+        // Cegah double send dengan cek apakah sudah ada log untuk booking ini dalam 1 menit terakhir
+        $existingLog = WhatsAppLog::where('booking_id', $booking->id)
+            ->where('status', 'sent')
+            ->where('created_at', '>=', now()->subMinute())
+            ->first();
+
+        if ($existingLog) {
+            Log::warning('WhatsApp notification already sent, skipping duplicate', [
+                'booking_id' => $booking->id,
+                'existing_log_id' => $existingLog->id,
+            ]);
+            return;
+        }
+
         try {
             $trip = $booking->trip;
             $route = $trip->route;
             $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ') ?: $booking->selected_seats;
 
-            // Use customer_name accessor which gets from user for consistency
             $customerName = $booking->customer_name;
+
+            // Format tanggal dan jam dengan benar
+            $departureDate = \Carbon\Carbon::parse($trip->departure_date)->format('d M Y');
+            $departureTime = $trip->departure_time;
+            // Jika departure_time adalah datetime, ambil hanya jamnya
+            if (strlen($departureTime) > 5) {
+                $departureTime = \Carbon\Carbon::parse($trip->departure_time)->format('H:i');
+            }
+
             $userMessage =
                 "Halo {$customerName}, booking tiket bus kamu sudah tercatat.\n\n" .
-                "Kode Booking: #{$booking->id}\n" .
-                "Rute: {$route->origin_city} → {$route->destination_city}\n" .
-                "Tanggal: " . \Carbon\Carbon::parse($trip->departure_date)->format('d M Y') . "\n" .
-                "Jam: " . $trip->departure_time . "\n" .
-                "Kursi: {$seatNumbers}\n" .
-                "Jumlah: {$booking->seats_count} kursi\n" .
-                "Total: Rp " . number_format((float) $booking->total_price, 0, ',', '.') . "\n\n" .
-                "Status: Menunggu Konfirmasi\n\n" .
-                "Terima kasih telah menggunakan SIBUSKU!";
+                "📋 Kode Booking: #{$booking->id}\n" .
+                "📍 Rute: {$route->origin_city} → {$route->destination_city}\n" .
+                "📅 Tanggal: {$departureDate}\n" .
+                "🕐 Jam: {$departureTime}\n" .
+                "💺 Kursi: {$seatNumbers}\n" .
+                "👥 Jumlah: {$booking->seats_count} kursi\n" .
+                "💰 Total: Rp " . number_format((float) $booking->total_price, 0, ',', '.') . "\n\n" .
+                "⏳ Status: Menunggu Konfirmasi\n\n" .
+                "Terima kasih telah menggunakan SIBUSKU! 🚌";
 
-            // Use getWhatsAppNumber() for consistency - always gets current user phone
+            // Kirim ke user (hanya sekali)
             self::send($booking->getWhatsAppNumber(), $userMessage, $booking);
 
-            // Notify admin
+            // Notify admin (opsional)
             $adminPhone = Config::get('services.fonnte.admin_phone');
             if ($adminPhone) {
+                // Format tanggal dan jam untuk admin
+                $departureDate = \Carbon\Carbon::parse($trip->departure_date)->format('d M Y');
+                $departureTime = $trip->departure_time;
+                if (strlen($departureTime) > 5) {
+                    $departureTime = \Carbon\Carbon::parse($trip->departure_time)->format('H:i');
+                }
+
                 $adminMessage =
                     "📋 Booking Baru\n\n" .
                     "ID: #{$booking->id}\n" .
-                    "Nama: {$booking->customer_name}\n" .
-                    "HP: {$booking->customer_phone}\n" .
-                    "Rute: {$route->origin_city} → {$route->destination_city}\n" .
-                    "Tanggal: " . \Carbon\Carbon::parse($trip->departure_date)->format('d M Y') . "\n" .
-                    "Jam: " . $trip->departure_time . "\n" .
-                    "Kursi: {$seatNumbers}\n" .
-                    "Total: Rp " . number_format((float) $booking->total_price, 0, ',', '.');
+                    "👤 Nama: {$booking->customer_name}\n" .
+                    "📱 HP: {$booking->customer_phone}\n" .
+                    "📍 Rute: {$route->origin_city} → {$route->destination_city}\n" .
+                    "📅 Tanggal: {$departureDate}\n" .
+                    "🕐 Jam: {$departureTime}\n" .
+                    "💺 Kursi: {$seatNumbers}\n" .
+                    "💰 Total: Rp " . number_format((float) $booking->total_price, 0, ',', '.');
 
                 self::send($adminPhone, $adminMessage, $booking);
             }
@@ -245,19 +289,27 @@ class WhatsAppService
             $seatNumbers = $booking->bookingSeats->pluck('seat_number')->join(', ') ?: $booking->selected_seats;
 
             $customerName = $booking->customer_name;
+
+            // Format tanggal dan jam dengan benar
+            $departureDate = \Carbon\Carbon::parse($trip->departure_date)->format('d M Y');
+            $departureTime = $trip->departure_time;
+            if (strlen($departureTime) > 5) {
+                $departureTime = \Carbon\Carbon::parse($trip->departure_time)->format('H:i');
+            }
+
             $message =
                 "✅ Booking Dikonfirmasi!\n\n" .
                 "Halo {$customerName},\n\n" .
                 "Booking tiket bus kamu SUDAH DIKONFIRMASI.\n\n" .
-                "Kode Booking: #{$booking->id}\n" .
-                "Rute: {$route->origin_city} → {$route->destination_city}\n" .
-                "Tanggal: " . \Carbon\Carbon::parse($trip->departure_date)->format('d M Y') . "\n" .
-                "Jam: " . $trip->departure_time . "\n" .
-                "Kursi: {$seatNumbers}\n" .
-                "Status: Dikonfirmasi\n\n" .
+                "📋 Kode Booking: #{$booking->id}\n" .
+                "📍 Rute: {$route->origin_city} → {$route->destination_city}\n" .
+                "📅 Tanggal: {$departureDate}\n" .
+                "🕐 Jam: {$departureTime}\n" .
+                "💺 Kursi: {$seatNumbers}\n" .
+                "✅ Status: Dikonfirmasi\n\n" .
                 "Selamat jalan! 🚌";
 
-            self::send($booking->customer_phone, $message, $booking);
+            self::send($booking->getWhatsAppNumber(), $message, $booking);
         } catch (\Throwable $e) {
             Log::error('Error in notifyBookingConfirmed', [
                 'booking_id' => $booking->id,

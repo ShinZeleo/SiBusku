@@ -15,6 +15,20 @@ class SendBookingNotification
     {
         $booking = $event->booking;
 
+        // Cegah double send dengan cek apakah sudah ada log untuk booking ini
+        $existingLog = \App\Models\WhatsAppLog::where('booking_id', $booking->id)
+            ->where('status', 'sent')
+            ->where('created_at', '>=', now()->subMinute())
+            ->first();
+
+        if ($existingLog) {
+            Log::warning('WhatsApp notification already sent, skipping duplicate', [
+                'booking_id' => $booking->id,
+                'existing_log_id' => $existingLog->id,
+            ]);
+            return;
+        }
+
         try {
             WhatsAppService::notifyBookingCreated($booking);
             Log::info('WhatsApp notification sent', [
