@@ -29,14 +29,50 @@ class UserBookingController extends Controller
      *
      * Data diurutkan berdasarkan tanggal dibuat (terbaru di atas).
      *
+     * Filter yang didukung:
+     * - status: Filter berdasarkan status booking (pending, confirmed, cancelled, completed)
+     * - search: Pencarian berdasarkan ID booking atau nama rute
+     * - date_from: Filter booking dari tanggal tertentu
+     * - date_to: Filter booking sampai tanggal tertentu
+     *
      * @return \Illuminate\View\View View user.bookings.index dengan data bookings (paginated)
      */
     public function index()
     {
-        $bookings = Booking::with(['trip.route', 'trip.bus', 'latestWhatsappLog'])
-            ->where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $query = Booking::with(['trip.route', 'trip.bus', 'latestWhatsappLog'])
+            ->where('user_id', Auth::id());
+
+        // Filter by status
+        if (request()->has('status') && request('status') !== '') {
+            $query->where('status', request('status'));
+        }
+
+        // Search by booking ID or route
+        if (request()->has('search') && request('search') !== '') {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhereHas('trip.route', function($routeQuery) use ($search) {
+                      $routeQuery->where('origin_city', 'like', "%{$search}%")
+                                 ->orWhere('destination_city', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Filter by date range
+        if (request()->has('date_from') && request('date_from') !== '') {
+            $query->whereHas('trip', function($tripQuery) {
+                $tripQuery->whereDate('departure_date', '>=', request('date_from'));
+            });
+        }
+
+        if (request()->has('date_to') && request('date_to') !== '') {
+            $query->whereHas('trip', function($tripQuery) {
+                $tripQuery->whereDate('departure_date', '<=', request('date_to'));
+            });
+        }
+
+        $bookings = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return view('user.bookings.index', compact('bookings'));
     }

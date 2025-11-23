@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="space-y-8">
+    <div class="space-y-8 pt-24 pb-16">
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
@@ -52,11 +52,61 @@
                 @endforeach
             </div>
         @else
-            <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center">
-                <p class="text-lg text-gray-600 mb-4">Tidak ditemukan trip untuk rute dan tanggal yang dicari.</p>
-                <a href="{{ route('home') }}" class="inline-block px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition">
-                    Cari Lagi
-                </a>
+            <!-- Empty State -->
+            <div class="min-h-[70vh] flex items-center justify-center py-16">
+                <div class="max-w-2xl mx-auto px-4 animate-fade-in-up">
+                    <!-- Illustration -->
+                    <div class="flex justify-center mb-8">
+                        <div class="relative w-48 h-48">
+                            <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full opacity-50"></div>
+                            <div class="absolute inset-4 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full opacity-30"></div>
+                            <div class="relative w-full h-full flex items-center justify-center">
+                                <svg class="w-24 h-24 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State Card -->
+                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-10 shadow-neumorphism-lg border border-white/50">
+                        <!-- Previous Search Badge -->
+                        <div class="flex justify-center mb-6">
+                            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-sm text-gray-700">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span class="font-semibold">{{ $originCity }}</span>
+                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                                <span class="font-semibold">{{ $destinationCity }}</span>
+                                <span class="text-gray-400 mx-2">•</span>
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="font-semibold">{{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Message -->
+                        <div class="text-center mb-8">
+                            <h2 class="text-3xl font-bold text-gray-900 mb-3">Tidak ditemukan trip untuk rute dan tanggal yang dicari.</h2>
+                            <p class="text-lg text-gray-600">Coba ubah tanggal keberangkatan atau pilih rute lain.</p>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <div class="flex justify-center">
+                            <a href="{{ route('home') }}" class="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 hover:ring-4 hover:ring-blue-500/20">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Cari Trip Lainnya
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         @endif
     </div>
@@ -269,4 +319,27 @@
         </script>
 
     @endauth
+
+    <!-- Custom Styles -->
+    <style>
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .shadow-neumorphism-lg {
+            box-shadow: 12px 12px 24px rgba(0, 0, 0, 0.08), -12px -12px 24px rgba(255, 255, 255, 0.8);
+        }
+    </style>
 </x-app-layout>

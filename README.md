@@ -91,12 +91,21 @@ DB_PASSWORD=
 ```
 
 ### 5. Konfigurasi WhatsApp (Fonnte)
-Tambahkan konfigurasi Fonnte di `.env`:
+
+**📖 Untuk tutorial lengkap, lihat: [TUTORIAL_FONNTE_API.md](TUTORIAL_FONNTE_API.md)**
+
+**Ringkasan cepat:**
+1. Daftar akun di https://fonnte.com
+2. Buat device dan dapatkan token API
+3. Hubungkan device dengan scan QR Code
+4. Tambahkan konfigurasi di `.env`:
 ```env
 FONNTE_API_URL=https://api.fonnte.com/send
 FONNTE_API_TOKEN=your_token_here
 FONNTE_ADMIN_PHONE=6281234567890
 FONNTE_DEFAULT_COUNTRY=62
+WHATSAPP_ENABLED=true
+WHATSAPP_TIMEOUT=3
 ```
 
 ### 6. Jalankan Migration & Seeder

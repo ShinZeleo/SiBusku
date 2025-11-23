@@ -30,8 +30,8 @@ unset($__defined_vars, $__key, $__value); ?>
 
 <?php
 $classes = ($active ?? false)
-            ? 'inline-flex items-center px-1 pt-1 border-b-2 border-indigo-400 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition duration-150 ease-in-out'
-            : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out';
+            ? 'inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold leading-5 text-blue-700 bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 focus:outline-none transition-all duration-200 ease-in-out'
+            : 'inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium leading-5 text-gray-600 hover:text-gray-900 hover:bg-white/50 backdrop-blur-sm border border-transparent hover:border-gray-200/50 focus:outline-none transition-all duration-200 ease-in-out';
 ?>
 
 <a <?php echo e($attributes->merge(['class' => $classes])); ?>>
