@@ -6,10 +6,35 @@ use App\Events\BookingCreated;
 use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Listener untuk event BookingCreated
+ *
+ * Listener ini menangkap event BookingCreated dan mengirim notifikasi
+ * WhatsApp ke user dan admin ketika booking baru dibuat.
+ *
+ * Duplicate Prevention:
+ * - Cek apakah sudah ada log WhatsApp 'sent' untuk booking ini dalam 1 menit terakhir
+ * - Jika ada, skip pengiriman (mencegah double notification)
+ *
+ * Error Handling:
+ * - Jika pengiriman gagal, error akan di-log tapi tidak akan mengganggu
+ *   proses pembuatan booking (karena ini side effect)
+ *
+ * @package App\Listeners
+ */
 class SendBookingNotification
 {
     /**
-     * Handle the event.
+     * Menangani event BookingCreated
+     *
+     * Fungsi ini dipanggil otomatis oleh Laravel ketika event BookingCreated
+     * di-dispatch. Fungsi ini akan:
+     * 1. Cek duplicate notification (dalam 1 menit terakhir)
+     * 2. Panggil WhatsAppService::notifyBookingCreated() untuk kirim notifikasi
+     * 3. Log hasil pengiriman (success atau error)
+     *
+     * @param BookingCreated $event Event yang berisi booking yang baru dibuat
+     * @return void
      */
     public function handle(BookingCreated $event): void
     {

@@ -56,6 +56,7 @@
                                         max="{{ $trip->available_seats }}"
                                         value="{{ old('seats_count', $selectedSeats ? count(explode(',', $selectedSeats)) : 1) }}"
                                         required
+                                        data-max-seats="{{ $trip->available_seats }}"
                                         class="w-24 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition"
                                     >
                                     <x-button.secondary type="button" onclick="openSeatModal()">
@@ -149,7 +150,7 @@
         style="display: none;"
     >
         <div
-            class="relative top-10 mx-auto p-6 border w-full max-w-5xl shadow-2xl rounded-2xl bg-white my-10"
+            class="relative top-4 mx-auto p-4 lg:p-5 border w-full max-w-4xl shadow-2xl rounded-2xl bg-white my-4 lg:my-6"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 transform scale-95"
             x-transition:enter-end="opacity-100 transform scale-100"
@@ -158,71 +159,67 @@
             x-transition:leave-end="opacity-0 transform scale-95"
             @click.away="open = false"
         >
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
                 <h3 class="text-2xl font-bold text-gray-900">Pilih Kursi</h3>
-                <button onclick="closeSeatModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <button onclick="closeSeatModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-all duration-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-6">
+            <div class="flex flex-col lg:flex-row gap-4 items-start">
                 <!-- Left: Legend & Info -->
-                <div class="space-y-4">
+                <div class="w-full lg:w-64 space-y-4 flex-shrink-0">
                     <div>
-                        <h4 class="font-semibold text-gray-900 mb-3">Legenda</h4>
+                        <h4 class="font-semibold text-gray-900 mb-3 text-base">Legenda</h4>
                         <div class="space-y-2">
                             <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-semibold"></div>
-                                <span class="text-sm text-gray-700">Tersedia</span>
+                                <div class="w-10 h-10 rounded border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-semibold shadow-sm"></div>
+                                <span class="text-sm text-gray-700 font-medium">Tersedia</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border-2 border-gray-400 bg-gray-400 flex items-center justify-center text-xs font-semibold text-white"></div>
-                                <span class="text-sm text-gray-700">Terisi</span>
+                                <div class="w-10 h-10 rounded border-2 border-gray-400 bg-gray-400 flex items-center justify-center text-xs font-semibold text-white shadow-sm"></div>
+                                <span class="text-sm text-gray-700 font-medium">Terisi</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border-2 border-sky-600 bg-sky-600 flex items-center justify-center text-xs font-semibold text-white"></div>
-                                <span class="text-sm text-gray-700">Dipilih</span>
+                                <div class="w-10 h-10 rounded border-2 border-sky-600 bg-sky-600 flex items-center justify-center text-xs font-semibold text-white shadow-sm"></div>
+                                <span class="text-sm text-gray-700 font-medium">Dipilih</span>
                             </div>
                         </div>
                     </div>
-                    <div class="pt-4 border-t border-gray-200">
-                        <h4 class="font-semibold text-gray-900 mb-3">Informasi</h4>
-                        <div class="bg-gray-50 rounded-xl p-4 space-y-2">
+                    <div class="pt-3 border-t border-gray-200">
+                        <h4 class="font-semibold text-gray-900 mb-3 text-base">Informasi</h4>
+                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 space-y-2 border border-gray-200 shadow-sm">
                             <p class="text-sm text-gray-600">
-                                <span class="font-semibold">Kursi Dipilih:</span>
-                                <span id="modalSelectedCount" class="text-gray-900">0</span> / 4
+                                <span class="font-semibold text-gray-800">Kursi Dipilih:</span>
+                                <span id="modalSelectedCount" class="text-gray-900 font-bold ml-1">0</span>
+                                <span class="text-gray-500">/ <span id="modalMaxSeats">{{ $trip->available_seats }}</span></span>
                             </p>
                             <p class="text-sm text-gray-600">
-                                <span class="font-semibold">Nomor Kursi:</span>
-                                <span id="modalSelectedSeats" class="text-gray-900">-</span>
+                                <span class="font-semibold text-gray-800">Nomor Kursi:</span>
+                                <span id="modalSelectedSeats" class="text-gray-900 font-medium ml-1">-</span>
                             </p>
                             <p class="text-sm text-gray-600">
-                                <span class="font-semibold">Total Harga:</span>
-                                <span id="modalTotalPrice" class="text-sky-600 font-bold">Rp 0</span>
+                                <span class="font-semibold text-gray-800">Total Harga:</span>
+                                <span id="modalTotalPrice" class="text-sky-600 font-bold text-base ml-1">Rp 0</span>
                             </p>
                         </div>
                     </div>
-                    <div class="pt-4 border-t border-gray-200">
+                    <div class="pt-3 border-t border-gray-200">
                         <x-button.secondary type="button" onclick="recommendSeats()" class="w-full">
-                            💡 Pilih Kursi Terbaik
+                            <span class="mr-2">💡</span>
+                            Pilih Kursi Terbaik
                         </x-button.secondary>
                     </div>
                 </div>
 
-                <!-- Center: Seat Map -->
-                <div class="md:col-span-2">
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <div class="text-center mb-4">
-                            <div class="inline-block bg-gray-200 rounded-lg px-4 py-2">
-                                <span class="text-sm font-semibold text-gray-700">DRIVER</span>
-                            </div>
-                        </div>
-
-                        <!-- Seat Grid -->
-                        <div id="seatMapGrid" class="grid grid-cols-4 gap-3">
-                            <div class="col-span-4 text-center py-8 text-gray-500">
+                <!-- Seat Map -->
+                <div class="flex-1 flex justify-center items-center min-w-0">
+                    <div class="bg-gradient-to-b from-slate-50 to-slate-100 rounded-xl p-3 shadow-lg border border-slate-300 relative overflow-hidden w-full">
+                        <!-- Seat Grid with Pintu Masuk, Driver, Seats, and Pintu Keluar -->
+                        <div id="seatMapGrid" class="relative z-10 mx-auto" style="line-height: 0; width: fit-content; transform-origin: center;">
+                            <div class="text-center py-8 text-gray-500 text-sm">
                                 Memuat layout kursi...
                             </div>
                         </div>
@@ -230,11 +227,11 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-3">
-                <x-button.secondary type="button" onclick="closeSeatModal()">
+            <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3">
+                <x-button.secondary type="button" onclick="closeSeatModal()" class="w-full sm:w-auto">
                     Batal
                 </x-button.secondary>
-                <x-button.primary type="button" onclick="confirmSeatSelection()" id="confirmSeatBtn" disabled>
+                <x-button.primary type="button" onclick="confirmSeatSelection()" id="confirmSeatBtn" disabled class="w-full sm:w-auto">
                     Gunakan Kursi
                 </x-button.primary>
             </div>
@@ -243,7 +240,8 @@
 
     <script>
         let selectedSeats = [];
-        const maxSeats = 4;
+        const maxAvailableSeats = {{ $trip->available_seats }}; // Maximum seats available in trip
+        let maxSeats = maxAvailableSeats; // Will be updated from seats_count input
         const pricePerSeat = {{ $trip->price }};
         const tripId = {{ $trip->id }};
         const initialSeats = @json($selectedSeats ? explode(',', $selectedSeats) : []);
@@ -256,9 +254,48 @@
                 updateSeatInputs();
             }
             updateTotalPrice();
+
+            // Update maxSeats when seats_count input changes
+            const seatsCountInput = document.getElementById('seats_count');
+            if (seatsCountInput) {
+                const maxFromInput = parseInt(seatsCountInput.getAttribute('data-max-seats')) || maxAvailableSeats;
+
+                seatsCountInput.addEventListener('change', function() {
+                    const inputValue = parseInt(this.value);
+                    const maxAllowed = parseInt(this.getAttribute('data-max-seats')) || maxAvailableSeats;
+
+                    // Ensure input doesn't exceed max available
+                    if (inputValue > maxAllowed) {
+                        this.value = maxAllowed;
+                        maxSeats = maxAllowed;
+                    } else {
+                        maxSeats = inputValue || maxAllowed;
+                    }
+
+                    updateSeatInfo();
+                    // If current selection exceeds new limit, remove excess seats
+                    if (selectedSeats.length > maxSeats) {
+                        selectedSeats = selectedSeats.slice(0, maxSeats);
+                        generateSeatMap();
+                        updateSeatInputs();
+                        updateSeatInfo();
+                        alert('Jumlah kursi yang dipilih melebihi batas. Kursi dipilih disesuaikan.');
+                    }
+                });
+                // Initialize maxSeats from current input value or max available
+                maxSeats = parseInt(seatsCountInput.value) || maxFromInput;
+            }
         });
 
         async function openSeatModal() {
+            // Update maxSeats from current input value before opening modal
+            const seatsCountInput = document.getElementById('seats_count');
+            if (seatsCountInput) {
+                const inputValue = parseInt(seatsCountInput.value);
+                const maxAllowed = parseInt(seatsCountInput.getAttribute('data-max-seats')) || maxAvailableSeats;
+                maxSeats = inputValue || maxAllowed;
+            }
+
             const modal = document.getElementById('seatModal');
             if (modal && modal.__x) {
                 modal.__x.$data.open = true;
@@ -295,10 +332,11 @@
             seatMap.innerHTML = '';
 
             if (seatLayout.length === 0) {
-                seatMap.innerHTML = '<div class="col-span-4 text-center py-8 text-gray-500">Tidak ada data kursi</div>';
+                seatMap.innerHTML = '<div class="text-center py-8 text-gray-500">Tidak ada data kursi</div>';
                 return;
             }
 
+            // Group seats by row
             const seatsByRow = {};
             seatLayout.forEach(seat => {
                 const row = seat.row_index;
@@ -308,34 +346,246 @@
                 seatsByRow[row].push(seat);
             });
 
-            Object.keys(seatsByRow).sort((a, b) => a - b).forEach(row => {
-                seatsByRow[row].sort((a, b) => a.col_index - b.col_index).forEach(seat => {
-                    const seatBtn = document.createElement('button');
-                    seatBtn.type = 'button';
-                    seatBtn.className = 'w-12 h-12 rounded border-2 transition font-semibold text-xs';
-                    seatBtn.textContent = seat.seat_number;
-                    seatBtn.dataset.seatNumber = seat.seat_number;
-                    seatBtn.onclick = () => toggleSeat(seat.seat_number);
+            // Get sorted row indices
+            const sortedRows = Object.keys(seatsByRow).sort((a, b) => parseInt(a) - parseInt(b));
+            const maxColIndex = 3; // 0-based, so max is 3 for 4 columns
 
-                    if (seat.status === 'booked') {
-                        seatBtn.classList.add('bg-gray-400', 'border-gray-400', 'cursor-not-allowed', 'text-white');
-                        seatBtn.disabled = true;
+            // Create Pintu Masuk row (above row A, aligned with column 1 - A1)
+            const pintuMasukRow = document.createElement('div');
+            pintuMasukRow.className = 'grid items-center';
+            pintuMasukRow.style.gridTemplateColumns = '56px 56px 16px 56px 56px 56px';
+            pintuMasukRow.style.gap = '4px';
+            pintuMasukRow.style.margin = '0';
+            pintuMasukRow.style.marginBottom = '4px';
+            // Pintu Masuk in column 1 (left side)
+            const pintuMasukBtn = document.createElement('div');
+            pintuMasukBtn.className = 'w-14 h-8 bg-gradient-to-r from-green-500 to-green-600 border border-green-700 rounded flex items-center justify-center shadow-sm';
+            pintuMasukBtn.innerHTML = '<span class="text-[10px] font-bold text-white leading-none">MASUK</span>';
+            pintuMasukRow.appendChild(pintuMasukBtn);
+            // Empty cell for column 2
+            const empty1 = document.createElement('div');
+            empty1.className = 'w-14 h-8';
+            pintuMasukRow.appendChild(empty1);
+            // Gang indicator (column 3) - DIPERKECIL
+            const gangIndicator1 = document.createElement('div');
+            gangIndicator1.className = 'h-8 bg-yellow-100 border border-yellow-400 rounded flex items-center justify-center';
+            gangIndicator1.style.width = '16px';
+            gangIndicator1.innerHTML = '<span class="text-[9px] font-bold text-yellow-700">↕</span>';
+            pintuMasukRow.appendChild(gangIndicator1);
+            // Empty cell for column 4
+            const empty2 = document.createElement('div');
+            empty2.className = 'w-14 h-8';
+            pintuMasukRow.appendChild(empty2);
+            // Empty cell for column 5 (driver space)
+            const empty3 = document.createElement('div');
+            empty3.className = 'w-14 h-8';
+            pintuMasukRow.appendChild(empty3);
+            seatMap.appendChild(pintuMasukRow);
+
+            // Create Driver row (above row A, aligned with column 4 - A4)
+            const driverRow = document.createElement('div');
+            driverRow.className = 'grid items-center';
+            driverRow.style.gridTemplateColumns = '56px 56px 16px 56px 56px 56px';
+            driverRow.style.gap = '4px';
+            driverRow.style.margin = '0';
+            driverRow.style.marginBottom = '4px';
+            // Empty cells for columns 1-2
+            for (let i = 0; i < 2; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'w-14 h-8';
+                driverRow.appendChild(emptyCell);
+            }
+            // Gang indicator (column 3) - DIPERKECIL
+            const gangIndicator2 = document.createElement('div');
+            gangIndicator2.className = 'h-8 bg-yellow-100 border border-yellow-400 rounded flex items-center justify-center';
+            gangIndicator2.style.width = '16px';
+            gangIndicator2.innerHTML = '<span class="text-[9px] font-bold text-yellow-700">↕</span>';
+            driverRow.appendChild(gangIndicator2);
+            // Empty cell for column 4
+            const empty4 = document.createElement('div');
+            empty4.className = 'w-14 h-8';
+            driverRow.appendChild(empty4);
+            // Driver in column 5 (right side)
+            const driverBtn = document.createElement('div');
+            driverBtn.className = 'w-14 h-8 bg-gradient-to-r from-gray-400 to-gray-500 border border-gray-600 rounded flex items-center justify-center shadow-sm';
+            driverBtn.innerHTML = '<span class="text-[10px] font-bold text-white leading-none">DRIVER</span>';
+            driverRow.appendChild(driverBtn);
+            seatMap.appendChild(driverRow);
+
+            // Create seat rows (A-H) with 2-2 layout and gang in middle
+            sortedRows.forEach(rowIndex => {
+                const row = parseInt(rowIndex);
+                const rowSeats = seatsByRow[row].sort((a, b) => a.col_index - b.col_index);
+
+                // Create row container: 2 seats left, gang, 2 seats right - GAP MINIMAL
+                const rowContainer = document.createElement('div');
+                rowContainer.className = 'grid items-stretch';
+                rowContainer.style.gridTemplateColumns = '56px 56px 16px 56px 56px 56px';
+                rowContainer.style.gap = '4px';
+                rowContainer.style.margin = '0';
+                rowContainer.style.marginBottom = '4px';
+                rowContainer.style.padding = '0';
+                rowContainer.style.lineHeight = '0';
+                rowContainer.style.fontSize = '0';
+
+                // Left side seats (columns 0-1, which are A1-A2, B1-B2, etc.)
+                for (let col = 0; col <= 1; col++) {
+                    const seat = rowSeats.find(s => s.col_index === col);
+
+                    if (seat) {
+                        const seatBtn = document.createElement('button');
+                        seatBtn.type = 'button';
+                        seatBtn.className = 'w-14 h-14 rounded border-2 border-gray-300 transition-all duration-200 font-semibold text-xs flex items-center justify-center';
+                        seatBtn.style.margin = '0';
+                        seatBtn.style.padding = '0';
+                        seatBtn.style.boxSizing = 'border-box';
+                        seatBtn.style.lineHeight = '1';
+                        seatBtn.style.fontSize = '12px';
+                        seatBtn.textContent = seat.seat_number;
+                        seatBtn.dataset.seatNumber = seat.seat_number;
+                        seatBtn.onclick = () => toggleSeat(seat.seat_number);
+
+                        if (seat.status === 'booked') {
+                            seatBtn.classList.add('bg-gray-400', 'border-gray-500', 'cursor-not-allowed', 'text-white', 'opacity-70');
+                            seatBtn.disabled = true;
+                        } else {
+                            seatBtn.classList.add('bg-white', 'hover:border-sky-500', 'hover:bg-sky-50', 'text-gray-800');
+                        }
+
+                        if (selectedSeats.includes(seat.seat_number)) {
+                            seatBtn.classList.remove('bg-white', 'border-gray-300', 'hover:border-sky-500', 'hover:bg-sky-50', 'text-gray-800');
+                            seatBtn.classList.add('bg-sky-600', 'border-sky-700', 'text-white', 'font-bold');
+                        }
+
+                        rowContainer.appendChild(seatBtn);
                     } else {
-                        seatBtn.classList.add('bg-white', 'border-gray-300', 'hover:border-sky-500', 'hover:bg-sky-50');
+                        const emptyCell = document.createElement('div');
+                        emptyCell.className = 'w-14 h-14';
+                        emptyCell.style.margin = '0';
+                        emptyCell.style.padding = '0';
+                        emptyCell.style.boxSizing = 'border-box';
+                        rowContainer.appendChild(emptyCell);
                     }
+                }
 
-                    if (selectedSeats.includes(seat.seat_number)) {
-                        seatBtn.classList.remove('bg-white', 'border-gray-300', 'hover:border-sky-500', 'hover:bg-sky-50');
-                        seatBtn.classList.add('bg-sky-600', 'border-sky-600', 'text-white');
+                // Gang in middle (column 3) - DIPERKECIL
+                const gangCell = document.createElement('div');
+                gangCell.className = 'h-14 bg-yellow-50 border-l border-r border-dashed border-yellow-300 flex items-center justify-center';
+                gangCell.style.width = '16px';
+                gangCell.style.margin = '0';
+                gangCell.style.padding = '0';
+                gangCell.style.boxSizing = 'border-box';
+                gangCell.innerHTML = '<div class="w-0.5 h-full bg-yellow-400"></div>';
+                rowContainer.appendChild(gangCell);
+
+                // Right side seats (columns 2-3, which are A3-A4, B3-B4, etc.)
+                for (let col = 2; col <= 3; col++) {
+                    const seat = rowSeats.find(s => s.col_index === col);
+
+                    if (seat) {
+                        const seatBtn = document.createElement('button');
+                        seatBtn.type = 'button';
+                        seatBtn.className = 'w-14 h-14 rounded border-2 border-gray-300 transition-all duration-200 font-semibold text-xs flex items-center justify-center';
+                        seatBtn.style.margin = '0';
+                        seatBtn.style.padding = '0';
+                        seatBtn.style.boxSizing = 'border-box';
+                        seatBtn.style.lineHeight = '1';
+                        seatBtn.style.fontSize = '12px';
+                        seatBtn.textContent = seat.seat_number;
+                        seatBtn.dataset.seatNumber = seat.seat_number;
+                        seatBtn.onclick = () => toggleSeat(seat.seat_number);
+
+                        if (seat.status === 'booked') {
+                            seatBtn.classList.add('bg-gray-400', 'border-gray-500', 'cursor-not-allowed', 'text-white', 'opacity-70');
+                            seatBtn.disabled = true;
+                        } else {
+                            seatBtn.classList.add('bg-white', 'hover:border-sky-500', 'hover:bg-sky-50', 'text-gray-800');
+                        }
+
+                        if (selectedSeats.includes(seat.seat_number)) {
+                            seatBtn.classList.remove('bg-white', 'border-gray-300', 'hover:border-sky-500', 'hover:bg-sky-50', 'text-gray-800');
+                            seatBtn.classList.add('bg-sky-600', 'border-sky-700', 'text-white', 'font-bold');
+                        }
+
+                        rowContainer.appendChild(seatBtn);
+                    } else {
+                        const emptyCell = document.createElement('div');
+                        emptyCell.className = 'w-14 h-14';
+                        emptyCell.style.margin = '0';
+                        emptyCell.style.padding = '0';
+                        emptyCell.style.boxSizing = 'border-box';
+                        rowContainer.appendChild(emptyCell);
                     }
+                }
 
-                    seatMap.appendChild(seatBtn);
-                });
+                // Empty space for driver alignment (column 5)
+                const emptySpace = document.createElement('div');
+                emptySpace.className = 'w-14 h-14';
+                emptySpace.style.margin = '0';
+                emptySpace.style.padding = '0';
+                emptySpace.style.boxSizing = 'border-box';
+                rowContainer.appendChild(emptySpace);
+
+                seatMap.appendChild(rowContainer);
             });
+
+            // Create Pintu Keluar row (below all seats, aligned with column 1 - H1)
+            const pintuKeluarRow = document.createElement('div');
+            pintuKeluarRow.className = 'grid items-center';
+            pintuKeluarRow.style.gridTemplateColumns = '56px 56px 16px 56px 56px 56px';
+            pintuKeluarRow.style.gap = '4px';
+            pintuKeluarRow.style.margin = '0';
+            pintuKeluarRow.style.marginTop = '4px';
+            // Pintu Keluar in column 1 (left side)
+            const pintuKeluarBtn = document.createElement('div');
+            pintuKeluarBtn.className = 'w-14 h-8 bg-gradient-to-r from-red-500 to-red-600 border border-red-700 rounded flex items-center justify-center shadow-sm';
+            pintuKeluarBtn.innerHTML = '<span class="text-[10px] font-bold text-white leading-none">KELUAR</span>';
+            pintuKeluarRow.appendChild(pintuKeluarBtn);
+            // Empty cell for column 2
+            const empty5 = document.createElement('div');
+            empty5.className = 'w-14 h-8';
+            pintuKeluarRow.appendChild(empty5);
+            // Gang indicator (column 3) - DIPERKECIL
+            const gangIndicator3 = document.createElement('div');
+            gangIndicator3.className = 'h-8 bg-yellow-100 border border-yellow-400 rounded flex items-center justify-center';
+            gangIndicator3.style.width = '16px';
+            gangIndicator3.innerHTML = '<span class="text-[9px] font-bold text-yellow-700">↕</span>';
+            pintuKeluarRow.appendChild(gangIndicator3);
+            // Empty cells for columns 4-5
+            for (let i = 0; i < 2; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'w-14 h-8';
+                pintuKeluarRow.appendChild(emptyCell);
+            }
+            seatMap.appendChild(pintuKeluarRow);
+
+            // Scale seat map to fit container after rendering
+            setTimeout(() => {
+                const container = seatMap.parentElement;
+                const containerWidth = container.clientWidth - 24; // minus padding
+                const containerHeight = container.clientHeight - 24; // minus padding
+
+                const seatMapWidth = seatMap.scrollWidth;
+                const seatMapHeight = seatMap.scrollHeight;
+
+                if (seatMapWidth > 0 && seatMapHeight > 0) {
+                    const scaleX = containerWidth / seatMapWidth;
+                    const scaleY = containerHeight / seatMapHeight;
+                    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+
+                    seatMap.style.transform = `scale(${scale})`;
+                    seatMap.style.transformOrigin = 'top center';
+                }
+            }, 50);
         }
 
         async function recommendSeats() {
-            const seatsCount = parseInt(document.getElementById('seats_count').value || '1', 10);
+            const seatsCountInput = document.getElementById('seats_count');
+            const seatsCount = parseInt(seatsCountInput.value || '1', 10);
+            const maxAllowed = parseInt(seatsCountInput.getAttribute('data-max-seats')) || maxAvailableSeats;
+
+            // Update maxSeats from input, but don't exceed max available
+            maxSeats = Math.min(seatsCount, maxAllowed);
 
             try {
                 const response = await fetch(`/api/trips/${tripId}/seats/recommend?count=${seatsCount}`);
@@ -351,7 +601,7 @@
 
                     generateSeatMap();
                     updateSeatInfo();
-                    document.getElementById('seats_count').value = selectedSeats.length;
+                    seatsCountInput.value = selectedSeats.length;
                 } else {
                     alert('Tidak ada kursi yang direkomendasikan. Silakan pilih manual.');
                 }
@@ -368,10 +618,18 @@
             if (index > -1) {
                 selectedSeats.splice(index, 1);
             } else {
+                // Update maxSeats from input before checking
+                const seatsCountInput = document.getElementById('seats_count');
+                if (seatsCountInput) {
+                    const inputValue = parseInt(seatsCountInput.value);
+                    const maxAllowed = parseInt(seatsCountInput.getAttribute('data-max-seats')) || maxAvailableSeats;
+                    maxSeats = inputValue || maxAllowed;
+                }
+
                 if (selectedSeats.length < maxSeats) {
                     selectedSeats.push(seatNumber);
                 } else {
-                    alert('Maksimal ' + maxSeats + ' kursi yang dapat dipilih');
+                    alert('Maksimal ' + maxSeats + ' kursi yang dapat dipilih. Silakan ubah jumlah kursi di form jika ingin memilih lebih banyak.');
                     return;
                 }
             }
@@ -380,7 +638,16 @@
         }
 
         function updateSeatInfo() {
+            // Update maxSeats from input
+            const seatsCountInput = document.getElementById('seats_count');
+            if (seatsCountInput) {
+                const inputValue = parseInt(seatsCountInput.value);
+                const maxAllowed = parseInt(seatsCountInput.getAttribute('data-max-seats')) || maxAvailableSeats;
+                maxSeats = inputValue || maxAllowed;
+            }
+
             document.getElementById('modalSelectedCount').textContent = selectedSeats.length;
+            document.getElementById('modalMaxSeats').textContent = maxSeats;
             document.getElementById('modalSelectedSeats').textContent = selectedSeats.length > 0 ? selectedSeats.join(', ') : '-';
 
             const total = selectedSeats.length * pricePerSeat;

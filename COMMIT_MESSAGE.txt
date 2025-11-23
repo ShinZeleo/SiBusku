@@ -1,0 +1,80 @@
+refactor: tambah dokumentasi lengkap, perluas seeder, dan bersihkan kode tidak terpakai
+
+## 📝 Penambahan Dokumentasi Lengkap
+- Tambahkan PHPDoc comments ke semua controller (BookingController, HomeController,
+  UserBookingController, SeatController, TripController, DashboardController,
+  BusController, RouteController, ProfileController, WhatsAppLogController,
+  BusSeatController)
+- Tambahkan dokumentasi ke semua service (BookingService, SeatService,
+  WhatsAppService, SeatRecommendationService)
+- Tambahkan dokumentasi ke semua model (Booking, Trip) termasuk relationships,
+  accessors, dan methods
+- Tambahkan dokumentasi ke Events & Listeners (BookingCreated, BookingStatusUpdated,
+  SendBookingNotification, LogBookingStatusChange)
+- Tambahkan dokumentasi ke Policies (BookingPolicy)
+- Tambahkan dokumentasi ke Middleware (AdminMiddleware, ForcePhoneMiddleware)
+- Tambahkan dokumentasi ke Form Requests (StoreBookingRequest)
+- Tambahkan dokumentasi ke helper functions (booking_whatsapp_badge)
+
+## 🌱 Perluasan Database Seeder
+- Perluas RouteSeeder: tambah rute dari 8 menjadi 28 rute (termasuk rute pulang-pergi)
+- Perluas BusSeeder: tambah bus dari 5 menjadi 14 bus dengan berbagai kelas
+  (Executive, Business, VIP, Premium)
+- Perluas TripSeeder: generate trip dari 23 November 2025 sampai 31 Januari 2026
+  (70 hari) dengan variasi:
+  * Lebih banyak trip pada hari libur (24-25 Des, 1 Jan)
+  * Randomisasi ketersediaan kursi (lebih sedikit pada hari libur)
+  * Variasi jumlah trip per hari berdasarkan rute
+
+## 🐛 Perbaikan Bug
+- Perbaiki ParseError di resources/views/user/bookings/show.blade.php
+  * Perbaiki @php block yang rusak di bagian "Log WhatsApp Terbaru"
+  * Perbaiki indentation di bagian "Action Buttons"
+  * Konversi inline @php ke block format
+
+## 🧹 Pembersihan Kode Tidak Terpakai
+
+### File yang Dihapus:
+- resources/views/dashboard.blade.php (tidak digunakan, diganti dengan
+  admin/dashboard.blade.php dan user/dashboard.blade.php)
+- resources/views/app.blade.php (tidak digunakan, menggunakan layouts/app.blade.php)
+- resources/views/welcome.blade.php (tidak digunakan, route home menggunakan
+  home.blade.php)
+- storage/framework/views/.gitignore (tidak diperlukan)
+
+### Route yang Dihapus:
+- Route /tes-wa (testing WhatsApp - hanya untuk development)
+- Route /debug-wa (debugging WhatsApp - hanya untuk development)
+
+### Import yang Dihapus:
+- BookingStatusLog di BookingController.php (tidak digunakan langsung)
+- WhatsAppService di routes/web.php (setelah route testing dihapus)
+- Request di UserBookingController.php (tidak digunakan)
+- Request di DashboardController.php (tidak digunakan)
+
+### Kode yang Dihapus:
+- Variabel $oldPaymentStatus di BookingController::update() (disimpan tapi tidak
+  digunakan)
+- Constructor kosong di UserBookingController (tidak diperlukan di Laravel 11)
+
+### Import yang Ditambahkan:
+- DB facade di BookingController.php (diperlukan untuk method destroy())
+
+## 📊 Statistik Perubahan
+- File dimodifikasi: 30+ file
+- File dihapus: 4 file
+- Baris dokumentasi ditambahkan: 500+ baris
+- Route testing dihapus: 2 route
+- Import tidak terpakai dihapus: 4 import
+
+## ✅ Testing
+- Semua perubahan telah diverifikasi dengan linter
+- Tidak ada error atau warning
+- Kode tetap berfungsi dengan baik setelah pembersihan
+
+## 🎯 Manfaat
+1. Kode lebih mudah dipahami oleh dosen dan developer lain
+2. Database seeder lebih lengkap untuk testing dan demo
+3. Kodebase lebih bersih tanpa file/kode yang tidak terpakai
+4. Maintenance lebih mudah dengan dokumentasi lengkap
+

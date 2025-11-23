@@ -7,10 +7,37 @@ use App\Models\BookingStatusLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Listener untuk event BookingStatusUpdated
+ *
+ * Listener ini menangkap event BookingStatusUpdated dan membuat log
+ * perubahan status ke database (BookingStatusLog) untuk audit trail.
+ *
+ * Log ini berguna untuk:
+ * - Tracking history perubahan status booking
+ * - Audit trail (siapa yang mengubah status, kapan, dan kenapa)
+ * - Debugging masalah terkait perubahan status
+ *
+ * @package App\Listeners
+ */
 class LogBookingStatusChange
 {
     /**
-     * Handle the event.
+     * Menangani event BookingStatusUpdated
+     *
+     * Fungsi ini dipanggil otomatis oleh Laravel ketika event BookingStatusUpdated
+     * di-dispatch. Fungsi ini akan:
+     * 1. Ambil user yang melakukan perubahan (Auth::id() atau booking->user_id sebagai fallback)
+     * 2. Buat record BookingStatusLog dengan informasi:
+     *    - booking_id: ID booking yang statusnya berubah
+     *    - user_id: ID user yang melakukan perubahan
+     *    - status_lama: Status sebelum perubahan
+     *    - status_baru: Status setelah perubahan
+     *    - keterangan: Keterangan perubahan (dari event atau auto-generated)
+     * 3. Log hasil ke application log
+     *
+     * @param BookingStatusUpdated $event Event yang berisi informasi perubahan status
+     * @return void
      */
     public function handle(BookingStatusUpdated $event): void
     {

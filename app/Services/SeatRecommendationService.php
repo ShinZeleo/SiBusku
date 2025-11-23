@@ -4,13 +4,42 @@ namespace App\Services;
 
 use App\Models\Trip;
 
+/**
+ * Service untuk memberikan rekomendasi kursi terbaik
+ *
+ * Service ini menggunakan algoritma untuk merekomendasikan kursi terbaik
+ * berdasarkan preferensi user dan ketersediaan kursi.
+ *
+ * Strategi Rekomendasi:
+ * 1. Untuk 1 kursi: Pilih kursi di tengah bus (hindari 20% pertama dan terakhir)
+ * 2. Untuk multiple kursi: Prioritaskan kursi yang bersebelahan
+ * 3. Prioritaskan kursi di tengah kolom (bukan di pinggir)
+ * 4. Hindari baris pertama dan terakhir
+ *
+ * @package App\Services
+ */
 class SeatRecommendationService
 {
     /**
-     * Rekomendasi kursi terbaik berdasarkan strategi:
-     * 1. Pilih kursi di bagian tengah bus (hindari paling depan dan belakang)
-     * 2. Jika lebih dari 1 kursi, usahakan bersebelahan
-     * 3. Pilih kursi yang tidak di pinggir (jika memungkinkan)
+     * Memberikan rekomendasi kursi terbaik untuk trip tertentu
+     *
+     * Fungsi ini menganalisis layout kursi dan ketersediaan untuk memberikan
+     * rekomendasi kursi terbaik berdasarkan algoritma scoring.
+     *
+     * Algoritma untuk 1 kursi:
+     * - Hitung skor berdasarkan posisi (tengah bus = skor tinggi)
+     * - Hindari baris pertama dan terakhir (penalty)
+     * - Prioritaskan tengah kolom
+     *
+     * Algoritma untuk multiple kursi:
+     * - Cari kursi bersebelahan di baris yang sama
+     * - Jika tidak ada, ambil kursi terdekat di tengah bus
+     * - Fallback: ambil kursi pertama yang tersedia
+     *
+     * @param Trip $trip Trip yang akan direkomendasikan kursinya
+     * @param int $count Jumlah kursi yang direkomendasikan (default: 1)
+     * @return array Array nomor kursi yang direkomendasikan (contoh: ['A3', 'A4'])
+     *               Array kosong jika tidak ada kursi tersedia atau count > available_seats
      */
     public static function recommendSeats(Trip $trip, int $count = 1): array
     {
@@ -47,7 +76,18 @@ class SeatRecommendationService
     }
 
     /**
-     * Cari kursi terbaik untuk 1 penumpang
+     * Mencari kursi terbaik untuk 1 penumpang
+     *
+     * Fungsi private ini menggunakan algoritma scoring untuk menemukan
+     * kursi terbaik untuk 1 penumpang. Scoring berdasarkan:
+     * - Posisi baris (tengah bus = skor tinggi, pinggir = skor rendah)
+     * - Posisi kolom (tengah kolom = skor tinggi)
+     * - Penalty untuk baris pertama dan terakhir
+     *
+     * Target: Kursi di 20%-80% dari total baris, tengah kolom
+     *
+     * @param array $availableLayout Array layout kursi yang tersedia
+     * @return string Nomor kursi terbaik (contoh: 'B2')
      */
     private static function findBestSingleSeat(array $availableLayout): string
     {
@@ -101,7 +141,19 @@ class SeatRecommendationService
     }
 
     /**
-     * Cari kursi bersebelahan untuk multiple penumpang
+     * Mencari kursi bersebelahan untuk multiple penumpang
+     *
+     * Fungsi private ini mencari kursi yang bersebelahan untuk
+     * multiple penumpang. Strategi:
+     * 1. Group kursi berdasarkan baris
+     * 2. Cari sequence bersebelahan di setiap baris
+     * 3. Jika tidak ada yang bersebelahan, ambil kursi terdekat di tengah bus
+     * 4. Fallback: ambil kursi pertama yang tersedia
+     *
+     * @param array $availableLayout Array layout kursi yang tersedia
+     * @param int $count Jumlah kursi yang dibutuhkan
+     * @param array $layoutMap Map nomor kursi ke layout info (untuk referensi)
+     * @return array Array nomor kursi yang bersebelahan atau terdekat
      */
     private static function findAdjacentSeats(array $availableLayout, int $count, array $layoutMap): array
     {

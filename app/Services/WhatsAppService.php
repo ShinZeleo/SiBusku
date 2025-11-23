@@ -9,10 +9,45 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Service untuk mengirim notifikasi WhatsApp via Fonnte API
+ *
+ * Service ini menangani semua operasi pengiriman pesan WhatsApp,
+ * termasuk retry mechanism, error handling, dan logging ke database.
+ *
+ * Fitur:
+ * - Duplicate prevention (cache lock 5 detik)
+ * - Retry mechanism (default 2 attempts)
+ * - Automatic phone number normalization
+ * - Database logging untuk audit trail
+ * - Support untuk disable service (untuk development)
+ *
+ * @package App\Services
+ */
 class WhatsAppService
 {
     /**
-     * Send WhatsApp message via Fonnte API
+     * Mengirim pesan WhatsApp via Fonnte API
+     *
+     * Fungsi ini mengirim pesan WhatsApp ke nomor tertentu menggunakan
+     * Fonnte API. Dilengkapi dengan:
+     * - Duplicate prevention (mencegah double send dalam 5 detik)
+     * - Retry mechanism jika gagal
+     * - Automatic phone number normalization (format Indonesia)
+     * - Database logging untuk tracking
+     *
+     * Proses yang dilakukan:
+     * 1. Cek duplicate send (cache lock 5 detik)
+     * 2. Cek apakah service enabled
+     * 3. Normalisasi nomor telepon (format: 62xxxxxxxxxxx)
+     * 4. Kirim request ke Fonnte API dengan retry
+     * 5. Log hasil ke database (WhatsAppLog)
+     *
+     * @param string $phone Nomor telepon tujuan (format: 08xx atau 62xx)
+     * @param string $message Pesan yang akan dikirim
+     * @param Booking|null $booking Booking terkait (optional, untuk logging)
+     * @param int $retryAttempts Jumlah percobaan ulang jika gagal (default: 2)
+     * @return bool true jika berhasil, false jika gagal
      */
     public static function send(
         string $phone,
@@ -170,7 +205,23 @@ class WhatsAppService
     }
 
     /**
-     * Log WhatsApp message to database
+     * Menyimpan log pengiriman WhatsApp ke database
+     *
+     * Fungsi private ini menyimpan log setiap pengiriman WhatsApp ke database
+     * untuk keperluan audit trail dan tracking. Log berisi:
+     * - booking_id: ID booking terkait (jika ada)
+     * - phone: Nomor telepon tujuan
+     * - message: Pesan yang dikirim
+     * - status: Status pengiriman (sent, pending, failed)
+     * - sent_at: Waktu pengiriman (jika berhasil)
+     * - error_message: Pesan error (jika gagal)
+     *
+     * @param string $phone Nomor telepon tujuan
+     * @param string $message Pesan yang dikirim
+     * @param string $status Status pengiriman ('sent', 'pending', 'failed')
+     * @param Booking|null $booking Booking terkait (optional)
+     * @param string|null $errorMessage Pesan error jika gagal (optional)
+     * @return WhatsAppLog|null WhatsAppLog yang dibuat, atau null jika gagal
      */
     private static function logToDatabase(
         string $phone,
@@ -199,7 +250,27 @@ class WhatsAppService
     }
 
     /**
-     * Notify user when booking is created
+     * Mengirim notifikasi WhatsApp saat booking dibuat
+     *
+     * Fungsi ini mengirim notifikasi ke user dan admin ketika booking baru dibuat.
+     * Notifikasi berisi:
+     * - Kode booking
+     * - Rute (kota asal → tujuan)
+     * - Tanggal dan jam keberangkatan
+     * - Kursi yang dipilih
+     * - Jumlah kursi dan total harga
+     * - Status booking (Menunggu Konfirmasi)
+     *
+     * Duplicate Prevention:
+     * - Cek apakah sudah ada log 'sent' untuk booking ini dalam 1 menit terakhir
+     * - Jika ada, skip pengiriman (mencegah double notification)
+     *
+     * Notifikasi dikirim ke:
+     * 1. User (pemesan) - selalu dikirim
+     * 2. Admin (jika admin_phone dikonfigurasi) - opsional
+     *
+     * @param Booking $booking Booking yang baru dibuat
+     * @return void
      */
     public static function notifyBookingCreated(Booking $booking): void
     {
@@ -279,7 +350,22 @@ class WhatsAppService
     }
 
     /**
-     * Notify user when booking is confirmed
+     * Mengirim notifikasi WhatsApp saat booking dikonfirmasi
+     *
+     * Fungsi ini mengirim notifikasi ke user ketika booking mereka dikonfirmasi
+     * oleh admin. Notifikasi berisi:
+     * - Konfirmasi bahwa booking sudah dikonfirmasi
+     * - Kode booking
+     * - Rute (kota asal → tujuan)
+     * - Tanggal dan jam keberangkatan
+     * - Kursi yang dipilih
+     * - Status: Dikonfirmasi
+     *
+     * Fungsi ini dipanggil oleh BookingController ketika admin mengubah
+     * status booking menjadi 'confirmed'.
+     *
+     * @param Booking $booking Booking yang dikonfirmasi
+     * @return void
      */
     public static function notifyBookingConfirmed(Booking $booking): void
     {

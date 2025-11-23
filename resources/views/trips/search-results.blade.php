@@ -6,7 +6,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">Hasil Pencarian</h1>
                 <p class="text-gray-600 mt-1">{{ $originCity }} → {{ $destinationCity }} pada {{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</p>
             </div>
-            <a href="{{ route('home') }}" class="text-sky-600 hover:text-sky-700 font-semibold">← Kembali</a>
+            <a href="{{ route('home') }}" class="text-sky-600 hover:text-sky-700 font-semibold transition hover:underline">← Kembali ke Beranda</a>
         </div>
 
         <!-- Search Results -->
@@ -54,7 +54,7 @@
         @else
             <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center">
                 <p class="text-lg text-gray-600 mb-4">Tidak ditemukan trip untuk rute dan tanggal yang dicari.</p>
-                <a href="{{ route('search.form') }}" class="inline-block px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition">
+                <a href="{{ route('home') }}" class="inline-block px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition">
                     Cari Lagi
                 </a>
             </div>
@@ -267,5 +267,6 @@
                 }
             }
         </script>
+
     @endauth
 </x-app-layout>

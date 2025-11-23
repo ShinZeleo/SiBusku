@@ -11,14 +11,57 @@ use App\Services\SeatService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Service untuk mengelola business logic booking tiket bus
+ *
+ * Service ini menangani semua operasi bisnis yang berkaitan dengan booking,
+ * termasuk pembuatan booking, update status, dan pembatalan. Service ini
+ * menggunakan database transaction untuk memastikan konsistensi data.
+ *
+ * @package App\Services
+ */
 class BookingService
 {
+    /**
+     * Constructor - Inject SeatService untuk validasi dan assignment kursi
+     *
+     * @param SeatService $seatService Service untuk validasi dan pengelolaan kursi
+     */
     public function __construct(
         private SeatService $seatService
     ) {}
 
     /**
-     * Create booking dengan validasi dan transaction
+     * Membuat booking baru dengan validasi lengkap dan transaction
+     *
+     * Fungsi ini adalah fungsi utama untuk membuat booking baru. Semua proses
+     * dilakukan dalam database transaction untuk memastikan konsistensi data.
+     *
+     * Proses yang dilakukan:
+     * 1. Lock trip untuk mencegah race condition (menggunakan lockForUpdate)
+     * 2. Parse dan validasi kursi yang dipilih menggunakan SeatService
+     * 3. Hitung total harga (harga per kursi × jumlah kursi)
+     * 4. Buat record booking di database
+     * 5. Assign kursi ke booking menggunakan SeatService
+     * 6. Update available_seats di trip (decrement)
+     * 7. Trigger event BookingCreated (akan trigger listener untuk kirim WA)
+     * 8. Log aktivitas untuk audit trail
+     *
+     * Validasi yang dilakukan:
+     * - Kursi tidak boleh kosong
+     * - Kursi tidak boleh duplikat
+     * - Jumlah kursi tidak boleh melebihi available_seats
+     * - Kursi tidak boleh sudah dibooking oleh user lain
+     *
+     * @param array $data Array berisi:
+     *                    - user_id: ID user yang membuat booking
+     *                    - trip_id: ID trip yang dibooking
+     *                    - customer_name: Nama pemesan (optional, default dari user)
+     *                    - customer_phone: No HP pemesan (optional, default dari user)
+     *                    - selected_seats: String kursi yang dipilih (format: "A1, A2, B3")
+     * @return Booking Booking yang baru dibuat
+     * @throws \Illuminate\Validation\ValidationException Jika validasi kursi gagal
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Jika trip atau user tidak ditemukan
      */
     public function createBooking(array $data): Booking
     {
@@ -80,7 +123,22 @@ class BookingService
     }
 
     /**
-     * Update booking status dengan logging
+     * Mengupdate status booking dengan logging dan event handling
+     *
+     * Fungsi ini mengupdate status booking dan melakukan beberapa operasi:
+     * 1. Update status di database
+     * 2. Buat log perubahan status (BookingStatusLog)
+     * 3. Trigger event BookingStatusUpdated (untuk notifikasi, dll)
+     * 4. Jika status menjadi 'cancelled', kembalikan kursi ke trip
+     *
+     * Catatan:
+     * - Jika status tidak berubah, fungsi akan return tanpa melakukan apapun
+     * - Semua operasi dilakukan dalam transaction untuk konsistensi
+     *
+     * @param Booking $booking Booking yang akan diupdate
+     * @param string $newStatus Status baru (pending, confirmed, cancelled, completed)
+     * @param string|null $keterangan Keterangan perubahan status (optional)
+     * @return void
      */
     public function updateBookingStatus(Booking $booking, string $newStatus, ?string $keterangan = null): void
     {
@@ -110,7 +168,30 @@ class BookingService
     }
 
     /**
-     * Cancel booking oleh user
+     * Membatalkan booking oleh user
+     *
+     * Fungsi ini memungkinkan user untuk membatalkan booking mereka sendiri.
+     * Hanya booking dengan status 'pending' yang bisa dibatalkan oleh user.
+     *
+     * Validasi:
+     * - User harus adalah pemilik booking
+     * - Status booking harus 'pending'
+     *
+     * Proses yang dilakukan:
+     * 1. Validasi authorization dan status
+     * 2. Panggil updateBookingStatus dengan status 'cancelled'
+     * 3. updateBookingStatus akan:
+     *    - Update status menjadi 'cancelled'
+     *    - Kembalikan kursi ke trip (increment available_seats)
+     *    - Hapus booking seats
+     *    - Buat log perubahan status
+     *    - Trigger event BookingStatusUpdated
+     *
+     * @param Booking $booking Booking yang akan dibatalkan
+     * @param int $userId ID user yang membatalkan (harus sama dengan booking->user_id)
+     * @return void
+     * @throws \Illuminate\Auth\Access\AuthorizationException Jika user bukan pemilik booking
+     * @throws \Illuminate\Validation\ValidationException Jika status bukan 'pending'
      */
     public function cancelBookingByUser(Booking $booking, int $userId): void
     {
@@ -128,7 +209,16 @@ class BookingService
     }
 
     /**
-     * Release seats saat booking dibatalkan
+     * Mengembalikan kursi ke trip saat booking dibatalkan
+     *
+     * Fungsi private ini dipanggil ketika booking dibatalkan untuk:
+     * 1. Mengembalikan jumlah kursi ke trip (increment available_seats)
+     * 2. Menghapus record booking seats dari database
+     *
+     * Fungsi ini dipanggil oleh updateBookingStatus ketika status berubah menjadi 'cancelled'.
+     *
+     * @param Booking $booking Booking yang dibatalkan
+     * @return void
      */
     private function releaseSeats(Booking $booking): void
     {

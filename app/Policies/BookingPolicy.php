@@ -5,10 +5,24 @@ namespace App\Policies;
 use App\Models\Booking;
 use App\Models\User;
 
+/**
+ * Policy untuk mengatur authorization pada Booking
+ *
+ * Policy ini menentukan siapa yang bisa melakukan operasi tertentu
+ * pada booking berdasarkan role dan ownership.
+ *
+ * @package App\Policies
+ */
 class BookingPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Menentukan apakah user bisa melihat daftar booking
+     *
+     * - User biasa: Bisa melihat booking mereka sendiri
+     * - Admin: Bisa melihat semua booking
+     *
+     * @param User $user User yang melakukan aksi
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function viewAny(User $user): bool
     {
@@ -16,7 +30,14 @@ class BookingPolicy
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Menentukan apakah user bisa melihat detail booking tertentu
+     *
+     * - User biasa: Hanya bisa melihat booking miliknya sendiri
+     * - Admin: Bisa melihat semua booking
+     *
+     * @param User $user User yang melakukan aksi
+     * @param Booking $booking Booking yang akan dilihat
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function view(User $user, Booking $booking): bool
     {
@@ -25,7 +46,13 @@ class BookingPolicy
     }
 
     /**
-     * Determine whether the user can create models.
+     * Menentukan apakah user bisa membuat booking baru
+     *
+     * - User biasa: Bisa membuat booking
+     * - Admin: Tidak bisa membuat booking (hanya untuk monitoring)
+     *
+     * @param User $user User yang melakukan aksi
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function create(User $user): bool
     {
@@ -33,7 +60,15 @@ class BookingPolicy
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Menentukan apakah user bisa mengupdate booking
+     *
+     * - Admin: Bisa mengupdate semua booking
+     * - User biasa: Hanya bisa mengupdate booking miliknya sendiri
+     *   yang masih berstatus 'pending'
+     *
+     * @param User $user User yang melakukan aksi
+     * @param Booking $booking Booking yang akan diupdate
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function update(User $user, Booking $booking): bool
     {
@@ -46,7 +81,14 @@ class BookingPolicy
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Menentukan apakah user bisa menghapus booking
+     *
+     * - Admin: Bisa menghapus semua booking
+     * - User biasa: Tidak bisa menghapus booking
+     *
+     * @param User $user User yang melakukan aksi
+     * @param Booking $booking Booking yang akan dihapus
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function delete(User $user, Booking $booking): bool
     {
@@ -55,7 +97,15 @@ class BookingPolicy
     }
 
     /**
-     * Determine whether the user can cancel the booking.
+     * Menentukan apakah user bisa membatalkan booking
+     *
+     * - User biasa: Bisa membatalkan booking miliknya sendiri
+     *   yang masih berstatus 'pending'
+     * - Admin: Tidak menggunakan policy ini (bisa update status langsung)
+     *
+     * @param User $user User yang melakukan aksi
+     * @param Booking $booking Booking yang akan dibatalkan
+     * @return bool true jika diizinkan, false jika tidak
      */
     public function cancel(User $user, Booking $booking): bool
     {

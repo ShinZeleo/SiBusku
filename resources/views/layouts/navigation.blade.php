@@ -76,11 +76,6 @@
                             </form>
                         </x-slot>
                     </x-dropdown>
-                @else
-                    <a href="{{ route('login') }}" class="text-sm text-gray-700 underline">Log in</a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="ml-4 text-sm text-gray-700 underline">Register</a>
-                    @endif
                 @endauth
             </div>
 
@@ -151,15 +146,6 @@
                             {{ __('Log Out') }}
                         </x-responsive-nav-link>
                     </form>
-                </div>
-            </div>
-        @else
-            <div class="pt-4 pb-1 border-t border-gray-200">
-                <div class="px-4">
-                    <a href="{{ route('login') }}" class="text-sm text-gray-700 underline">Log in</a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="ml-4 text-sm text-gray-700 underline">Register</a>
-                    @endif
                 </div>
             </div>
         @endauth

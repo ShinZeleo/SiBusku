@@ -13,7 +13,7 @@
                             <a href="{{ route('dashboard') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition">Dashboard</a>
                         @else
                             <a href="{{ route('login') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition">Login</a>
-                            <a href="{{ route('register') }}" class="px-4 py-2 bg-white hover:text-sky-700 rounded-lg transition">Register</a>
+                            <a href="{{ route('register') }}" class="px-4 py-2 bg-white text-black hover:text-sky-700 hover:border-sky-700 rounded-lg transition">Register</a>
                         @endauth
                     </div>
                 </div>

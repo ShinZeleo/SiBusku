@@ -6,15 +6,34 @@ use App\Models\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 
+/**
+ * Controller untuk mengelola route (rute perjalanan)
+ *
+ * Controller ini menangani semua operasi CRUD route untuk admin,
+ * termasuk penambahan rute baru, update data, dan penghapusan.
+ *
+ * @package App\Http\Controllers
+ */
 class RouteController extends Controller
 {
+    /**
+     * Constructor
+     *
+     * Catatan: Middleware (admin) diterapkan di route definition,
+     * bukan di constructor pada Laravel 11.
+     */
     public function __construct()
     {
         // Middleware diterapkan di route, bukan di sini pada Laravel 11
     }
 
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar semua route (untuk admin)
+     *
+     * Fungsi ini menampilkan semua route yang ada di sistem dengan pagination.
+     * Data diurutkan berdasarkan kota asal (alphabetical).
+     *
+     * @return \Illuminate\View\View View admin.routes.index dengan data routes (paginated)
      */
     public function index()
     {
@@ -23,7 +42,9 @@ class RouteController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form untuk menambah route baru
+     *
+     * @return \Illuminate\View\View View admin.routes.create
      */
     public function create()
     {
@@ -31,7 +52,17 @@ class RouteController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan route baru ke database
+     *
+     * Validasi:
+     * - origin_city: Wajib, string, max 255 karakter
+     * - destination_city: Wajib, string, max 255 karakter
+     * - duration_estimate: Wajib, numeric, min 0.1 (dalam jam)
+     * - is_active: Optional, boolean
+     *
+     * @param Request $request Request berisi data route
+     * @return \Illuminate\Http\RedirectResponse Redirect ke routes.index dengan success message
+     * @throws \Illuminate\Validation\ValidationException Jika validasi gagal
      */
     public function store(Request $request)
     {
@@ -53,7 +84,10 @@ class RouteController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan detail route tertentu
+     *
+     * @param string $id ID route yang akan ditampilkan
+     * @return \Illuminate\View\View View admin.routes.show dengan data route
      */
     public function show(string $id)
     {
@@ -62,7 +96,10 @@ class RouteController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Menampilkan form edit route
+     *
+     * @param string $id ID route yang akan diedit
+     * @return \Illuminate\View\View View admin.routes.edit dengan data route
      */
     public function edit(string $id)
     {
@@ -71,7 +108,14 @@ class RouteController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Mengupdate data route
+     *
+     * Validasi sama seperti store().
+     *
+     * @param Request $request Request berisi data route yang akan diupdate
+     * @param string $id ID route yang akan diupdate
+     * @return \Illuminate\Http\RedirectResponse Redirect ke routes.index dengan success message
+     * @throws \Illuminate\Validation\ValidationException Jika validasi gagal
      */
     public function update(Request $request, string $id)
     {
@@ -95,7 +139,18 @@ class RouteController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus route dari database (untuk admin)
+     *
+     * Validasi:
+     * - Route tidak bisa dihapus jika memiliki trip terkait
+     *   (untuk menjaga integritas data)
+     *
+     * WARNING: Operasi ini tidak bisa di-undo.
+     *
+     * @param string $id ID route yang akan dihapus
+     * @return \Illuminate\Http\RedirectResponse
+     *         - Redirect ke routes.index dengan success message jika berhasil
+     *         - Redirect ke routes.index dengan error message jika route memiliki trip
      */
     public function destroy(string $id)
     {

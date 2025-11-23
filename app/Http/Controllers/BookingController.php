@@ -4,21 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
-use App\Models\BookingStatusLog;
 use App\Models\Trip;
 use App\Services\BookingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
+/**
+ * Controller untuk mengelola booking tiket bus
+ *
+ * Controller ini menangani semua operasi CRUD booking untuk admin,
+ * termasuk pembuatan booking baru, update status, pembatalan, dan export data.
+ *
+ * @package App\Http\Controllers
+ */
 class BookingController extends Controller
 {
+    /**
+     * Constructor - Inject BookingService untuk business logic
+     *
+     * BookingService digunakan untuk memisahkan business logic dari controller,
+     * sehingga controller hanya fokus pada HTTP request/response handling.
+     *
+     * @param BookingService $bookingService Service untuk logika bisnis booking
+     */
     public function __construct(
         private BookingService $bookingService
     ) {}
 
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar semua booking (untuk admin)
+     *
+     * Fungsi ini menampilkan semua booking yang ada di sistem dengan pagination.
+     * Data yang ditampilkan termasuk informasi user, trip, route, dan status WhatsApp.
+     *
+     * @return \Illuminate\View\View View admin.bookings.index dengan data bookings
      */
     public function index()
     {
@@ -29,7 +50,15 @@ class BookingController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form untuk membuat booking baru
+     *
+     * Fungsi ini menampilkan halaman form booking setelah user memilih trip.
+     * Form ini akan menampilkan detail trip, bus, dan form untuk memilih kursi.
+     *
+     * @param Request $request HTTP request yang berisi trip_id dan optional seats
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     *         - View bookings.create jika trip_id valid
+     *         - Redirect ke home jika trip_id tidak ada
      */
     public function create(Request $request)
     {
@@ -45,9 +74,27 @@ class BookingController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan booking baru ke database
      *
-     * Menggunakan BookingService untuk business logic
+     * Fungsi ini menerima data booking dari form, melakukan validasi,
+     * dan menyimpan booking melalui BookingService. Setelah berhasil,
+     * user akan diarahkan ke halaman success dengan kode booking.
+     *
+     * Proses yang dilakukan:
+     * 1. Validasi input menggunakan StoreBookingRequest
+     * 2. Memanggil BookingService untuk membuat booking (dengan transaction)
+     * 3. BookingService akan:
+     *    - Validasi kursi yang dipilih
+     *    - Hitung total harga
+     *    - Simpan booking dan booking seats
+     *    - Update available_seats di trip
+     *    - Trigger event BookingCreated (untuk kirim WA)
+     * 4. Redirect ke success page dengan booking code
+     *
+     * @param StoreBookingRequest $request Request yang sudah divalidasi
+     * @return \Illuminate\Http\RedirectResponse
+     *         - Redirect ke success page jika berhasil
+     *         - Redirect back dengan error jika gagal
      */
     public function store(StoreBookingRequest $request)
     {
@@ -80,7 +127,24 @@ class BookingController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan detail booking tertentu
+     *
+     * Fungsi ini menampilkan detail lengkap dari sebuah booking, termasuk:
+     * - Informasi user yang melakukan booking
+     * - Detail trip (rute, tanggal, jam, bus)
+     * - Kursi yang dipilih
+     * - Status booking dan pembayaran
+     * - Log WhatsApp terbaru
+     * - History perubahan status
+     *
+     * Authorization:
+     * - Admin bisa melihat semua booking
+     * - User hanya bisa melihat booking miliknya sendiri
+     *
+     * @param string $id ID booking yang akan ditampilkan
+     * @return \Illuminate\View\View View bookings.show dengan data booking
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Jika booking tidak ditemukan
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 jika user tidak berhak
      */
     public function show(string $id)
     {
@@ -102,7 +166,13 @@ class BookingController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Menampilkan form edit booking (untuk admin)
+     *
+     * Fungsi ini menampilkan form untuk mengubah status booking dan payment status.
+     * Hanya admin yang bisa mengakses fungsi ini.
+     *
+     * @param string $id ID booking yang akan diedit
+     * @return \Illuminate\View\View View admin.bookings.edit dengan data booking
      */
     public function edit(string $id)
     {
@@ -111,7 +181,25 @@ class BookingController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Mengupdate status booking dan payment status
+     *
+     * Fungsi ini digunakan oleh admin untuk mengubah status booking.
+     * Ketika status diubah menjadi 'confirmed', sistem akan otomatis
+     * mengirim notifikasi WhatsApp ke user.
+     *
+     * Proses yang dilakukan:
+     * 1. Validasi input (status dan payment_status)
+     * 2. Update booking status menggunakan BookingService
+     * 3. BookingService akan:
+     *    - Update status di database
+     *    - Buat log perubahan status (BookingStatusLog)
+     *    - Trigger event BookingStatusUpdated
+     *    - Jika status menjadi 'cancelled', kembalikan kursi ke trip
+     * 4. Jika status menjadi 'confirmed', kirim notifikasi WA
+     *
+     * @param Request $request Request berisi status, payment_status, dan optional keterangan
+     * @param string $id ID booking yang akan diupdate
+     * @return \Illuminate\Http\RedirectResponse Redirect ke admin.bookings.index dengan success message
      */
     public function update(Request $request, string $id)
     {
@@ -124,7 +212,6 @@ class BookingController extends Controller
         ]);
 
         $oldStatus = $booking->status;
-        $oldPaymentStatus = $booking->payment_status;
 
         // Update booking
         $booking->update([
@@ -154,19 +241,58 @@ class BookingController extends Controller
     }
 
     /**
-     * Cancel booking oleh user
+     * Membatalkan booking oleh user
+     *
+     * Fungsi ini memungkinkan user untuk membatalkan booking mereka sendiri
+     * yang masih berstatus 'pending'. Setelah dibatalkan, kursi akan dikembalikan
+     * ke trip dan status booking berubah menjadi 'cancelled'.
+     *
+     * Authorization:
+     * - User hanya bisa membatalkan booking miliknya sendiri
+     * - Hanya booking dengan status 'pending' yang bisa dibatalkan
+     *
+     * Proses yang dilakukan:
+     * 1. Cek apakah user adalah pemilik booking
+     * 2. Cek apakah status booking adalah 'pending'
+     * 3. Panggil BookingService->cancelBookingByUser()
+     * 4. BookingService akan:
+     *    - Update status menjadi 'cancelled'
+     *    - Kembalikan kursi ke trip (increment available_seats)
+     *    - Hapus booking seats
+     *    - Buat log perubahan status
+     *    - Trigger event BookingStatusUpdated
+     *
+     * @param Request $request HTTP request (tidak digunakan, hanya untuk consistency)
+     * @param string $id ID booking yang akan dibatalkan
+     * @return \Illuminate\Http\RedirectResponse
+     *         - Redirect ke user.bookings.index dengan success message jika berhasil
+     *         - Redirect back dengan error jika gagal
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 jika user tidak berhak
      */
     public function cancel(Request $request, string $id)
     {
         $booking = Booking::findOrFail($id);
+        $user = Auth::user();
 
-        $this->authorize('cancel', $booking);
+        // Manual authorization check (matching BookingPolicy logic)
+        // User hanya bisa cancel booking mereka sendiri yang masih pending
+        if ($booking->user_id !== $user->id) {
+            abort(403, 'Anda tidak memiliki izin untuk membatalkan booking ini.');
+        }
+
+        if ($booking->status !== 'pending') {
+            return Redirect::back()
+                ->withErrors(['error' => 'Hanya booking dengan status pending yang bisa dibatalkan.']);
+        }
 
         try {
-            $this->bookingService->cancelBookingByUser($booking, Auth::id());
+            $this->bookingService->cancelBookingByUser($booking, $user->id);
 
             return Redirect::route('user.bookings.index')
                 ->with('success', 'Booking berhasil dibatalkan.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return Redirect::back()
+                ->withErrors($e->errors());
         } catch (\Throwable $e) {
             return Redirect::back()
                 ->withErrors(['error' => $e->getMessage()]);
@@ -174,7 +300,23 @@ class BookingController extends Controller
     }
 
     /**
-     * Show success page setelah booking
+     * Menampilkan halaman sukses setelah booking dibuat
+     *
+     * Fungsi ini menampilkan halaman konfirmasi setelah user berhasil membuat booking.
+     * Halaman ini menampilkan:
+     * - Kode booking (format: SIB-0001)
+     * - Detail booking lengkap
+     * - Informasi trip dan kursi
+     * - Link untuk download e-ticket
+     * - Link untuk melihat riwayat booking
+     *
+     * Authorization:
+     * - Admin bisa melihat semua booking
+     * - User hanya bisa melihat booking miliknya sendiri
+     *
+     * @param string $id ID booking yang baru dibuat
+     * @return \Illuminate\View\View View bookings.success dengan data booking dan booking code
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 jika user tidak berhak
      */
     public function success(string $id)
     {
@@ -191,7 +333,17 @@ class BookingController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus booking dari database (untuk admin)
+     *
+     * Fungsi ini menghapus booking secara permanen dari database.
+     * Sebelum menghapus, sistem akan:
+     * - Kembalikan kursi ke trip jika booking belum dibatalkan
+     * - Hapus semua booking seats terkait
+     *
+     * WARNING: Operasi ini tidak bisa di-undo. Hanya gunakan jika benar-benar diperlukan.
+     *
+     * @param string $id ID booking yang akan dihapus
+     * @return \Illuminate\Http\RedirectResponse Redirect ke admin.bookings.index dengan success message
      */
     public function destroy(string $id)
     {
@@ -215,7 +367,25 @@ class BookingController extends Controller
     }
 
     /**
-     * Download PDF ticket untuk user
+     * Mengunduh e-ticket dalam format PDF
+     *
+     * Fungsi ini menghasilkan dan mengunduh e-ticket booking dalam format PDF.
+     * E-ticket berisi:
+     * - Kode booking
+     * - Detail trip (rute, tanggal, jam, bus)
+     * - Kursi yang dipilih
+     * - Informasi pemesan
+     * - QR Code untuk verifikasi
+     *
+     * Authorization:
+     * - Admin bisa download semua e-ticket
+     * - User hanya bisa download e-ticket miliknya sendiri
+     *
+     * @param string $id ID booking yang akan di-download e-ticket-nya
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     *         - PDF file download jika berhasil
+     *         - Redirect back dengan error jika gagal (misalnya package dompdf tidak terinstall)
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 jika user tidak berhak
      */
     public function downloadTicket(string $id)
     {
@@ -249,7 +419,24 @@ class BookingController extends Controller
     }
 
     /**
-     * Export bookings to CSV
+     * Mengekspor semua booking ke file CSV
+     *
+     * Fungsi ini mengekspor semua data booking ke file CSV untuk keperluan
+     * laporan atau analisis data. File CSV berisi:
+     * - ID Booking
+     * - Nama Pemesan
+     * - No. HP
+     * - Rute (Asal - Tujuan)
+     * - Tanggal & Jam Berangkat
+     * - Jumlah & Nomor Kursi
+     * - Total Harga
+     * - Status Booking & Pembayaran
+     * - Tanggal Booking
+     *
+     * File akan di-download dengan nama format: bookings_YYYY-MM-DD_HH-mm-ss.csv
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     *         Response stream untuk download file CSV
      */
     public function exportCsv()
     {

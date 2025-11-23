@@ -56,9 +56,8 @@
                                                 <div class="flex items-center gap-3">
                                                     <a href="{{ route('user.bookings.show', $booking->id) }}" class="text-indigo-600 hover:text-indigo-900">Lihat Detail</a>
                                                     @if($booking->status === 'pending')
-                                                        <form action="{{ route('bookings.cancel', $booking->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan booking ini?')">
+                                                        <form action="{{ route('bookings.cancel', $booking->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan booking ini?')" class="inline">
                                                             @csrf
-                                                            @method('POST')
                                                             <button type="submit" class="text-red-600 hover:text-red-900">Batal</button>
                                                         </form>
                                                     @endif

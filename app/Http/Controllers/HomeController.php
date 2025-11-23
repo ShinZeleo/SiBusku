@@ -6,10 +6,29 @@ use App\Models\Trip;
 use App\Models\Route;
 use Illuminate\Http\Request;
 
+/**
+ * Controller untuk halaman publik (home dan pencarian trip)
+ *
+ * Controller ini menangani halaman beranda dan fungsi pencarian trip
+ * yang dapat diakses oleh semua user (guest dan authenticated).
+ *
+ * @package App\Http\Controllers
+ */
 class HomeController extends Controller
 {
     /**
-     * Menampilkan halaman beranda
+     * Menampilkan halaman beranda dengan form pencarian
+     *
+     * Fungsi ini menampilkan:
+     * - Form pencarian trip (kota asal, tujuan, tanggal)
+     * - Daftar kota asal dan tujuan yang tersedia (dari routes aktif)
+     * - 5 trip terdekat yang akan datang sebagai rekomendasi
+     *
+     * Data yang diambil:
+     * - Semua route aktif untuk dropdown kota
+     * - 5 trip terdekat dengan status 'scheduled' dan tanggal >= hari ini
+     *
+     * @return \Illuminate\View\View View home dengan data originCities, destinationCities, dan trips
      */
     public function index()
     {
@@ -32,7 +51,25 @@ class HomeController extends Controller
     }
 
     /**
-     * Menampilkan halaman pencarian trip
+     * Mencari trip berdasarkan kriteria pencarian
+     *
+     * Fungsi ini melakukan pencarian trip berdasarkan:
+     * - Kota asal (origin_city)
+     * - Kota tujuan (destination_city)
+     * - Tanggal keberangkatan (departure_date)
+     *
+     * Validasi:
+     * - origin_city dan destination_city harus berbeda
+     * - departure_date harus >= hari ini (tidak bisa booking untuk tanggal lalu)
+     *
+     * Hasil pencarian:
+     * - Hanya menampilkan trip dengan status 'scheduled'
+     * - Hanya menampilkan trip yang masih ada kursi tersedia (available_seats > 0)
+     * - Diurutkan berdasarkan jam keberangkatan (departure_time)
+     *
+     * @param Request $request Request berisi origin_city, destination_city, dan departure_date
+     * @return \Illuminate\View\View View trips.search-results dengan data trips dan kriteria pencarian
+     * @throws \Illuminate\Validation\ValidationException Jika validasi gagal
      */
     public function search(Request $request)
     {
@@ -62,7 +99,13 @@ class HomeController extends Controller
     }
 
     /**
-     * Menampilkan form pencarian trip
+     * Menampilkan halaman form pencarian trip (alternatif route)
+     *
+     * Fungsi ini menampilkan halaman khusus untuk pencarian trip.
+     * Mirip dengan index(), tapi ini route terpisah jika diperlukan
+     * untuk halaman pencarian yang lebih fokus.
+     *
+     * @return \Illuminate\View\View View trips.search dengan data originCities dan destinationCities
      */
     public function showSearchForm()
     {
